@@ -40,9 +40,11 @@ character (see `CHANGELOG.md`).
 - Run: <https://github.com/Gyeemi/NovaMail/actions?query=workflow%3A%22Build+Windows+installer%22>
 - Artifact `Novamail-Setup-x64`, or the draft release **Novamail v1.0.1**.
 
-### Previously built: v1.0.0
+### Previously built: v1.0.0 (superseded)
 
-The first installer was built from tag `v1.0.0`:
+**Do not use v1.0.0** - its dialogs accepted only one character of input. The
+draft release has been deleted so it cannot be picked up by mistake; the tag
+remains for history. For the record:
 
 - Run: <https://github.com/Gyeemi/NovaMail/actions/runs/40840519047>
 - Artifact `Novamail-Setup-x64` (141 MB, a zip containing
