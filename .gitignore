@@ -1,0 +1,41 @@
+# dependencies
+node_modules/
+
+# build output
+out/
+dist/
+release/
+*.tsbuildinfo
+
+# electron-builder cache / temporary packaging output
+build/icon.icns.tmp
+dist_electron/
+
+# local test artifacts
+coverage/
+test-results/
+playwright-report/
+.vite/
+
+# local databases and caches (never commit user data)
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+.novamail-dev/
+
+# environment / secrets
+.env
+.env.*
+!.env.example
+
+# editor and OS noise
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+
+# logs
+*.log
+npm-debug.log*
