@@ -48,6 +48,19 @@ protocol.registerSchemesAsPrivileged([
 ])
 
 const isDev = !app.isPackaged
+
+/**
+ * Static assets (window/tray icons) live in <resources>/assets when packaged and
+ * in ./build during development. Resolving from the app path keeps the icons
+ * working no matter which directory the process was started from.
+ */
+function assetPath(name: string): string {
+  const packaged = path.join(process.resourcesPath ?? '', 'assets', name)
+  if (fs.existsSync(packaged)) return packaged
+  const dev = path.join(app.getAppPath(), 'build', name)
+  if (fs.existsSync(dev)) return dev
+  return packaged
+}
 const paths = resolveAppPaths(process.env.NOVAMAIL_DATA_DIR ?? app.getPath('userData'))
 configureLogger({ dir: paths.logsDir, level: process.env.NOVAMAIL_LOG_LEVEL === 'debug' ? 'debug' : 'info' })
 const log = createLogger('main')
@@ -298,7 +311,7 @@ function createMainWindow(): BrowserWindow {
     backgroundColor: '#eef2f6',
     title: 'Novamail',
     autoHideMenuBar: true,
-    icon: path.join(process.env.NOVAMAIL_RESOURCES ?? '', 'icon.png'),
+    icon: assetPath('icon.png'),
     titleBarStyle: 'default',
     webPreferences: {
       preload: path.join(__dirname_, '../preload/index.js'),
@@ -394,7 +407,7 @@ function focusWindow(): void {
 }
 
 function createTray(ctx: AppContext): void {
-  const iconPath = path.join(process.env.NOVAMAIL_RESOURCES ?? '', 'tray.png')
+  const iconPath = assetPath('tray.png')
   if (!fs.existsSync(iconPath)) return
   tray = new Tray(nativeImage.createFromPath(iconPath))
   tray.setToolTip('Novamail')
@@ -514,6 +527,16 @@ async function bootstrap(): Promise<void> {
     app.setLoginItemSettings({ openAtLogin: context.settings.get().launchAtStartup })
   }
 
+  const startedContext: AppContext = context
+  startedContext.settings.onChange((settings) => {
+    if (settings.minimizeToTray && !tray) createTray(startedContext)
+    if (!settings.minimizeToTray && tray) {
+      tray.destroy()
+      tray = null
+    }
+    if (app.isPackaged) app.setLoginItemSettings({ openAtLogin: settings.launchAtStartup })
+  })
+
   context.sync.start()
   // Deliver anything that was queued while the app was closed.
   setTimeout(() => void context?.mail.processOutbox(), 3_000)
@@ -527,7 +550,9 @@ if (!app.requestSingleInstanceLock()) {
   app.on('second-instance', () => focusWindow())
 
   app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin') app.quit()
+    // Keeping a tray icon means the app should stay alive for new-mail alerts.
+    // Quitting here would make "minimise to tray" silently stop notifications.
+    if (process.platform !== 'darwin' && !tray) app.quit()
   })
 
   app.on('activate', () => {

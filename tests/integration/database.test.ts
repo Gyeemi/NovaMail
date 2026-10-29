@@ -168,15 +168,13 @@ describe('accounts, folders and messages', () => {
     messages.saveBody(id, { html: '<p>Body</p>', text: 'Body', blockedRemoteCount: 2 })
     const attachments = new AttachmentsRepository(db)
     attachments.add({
-      id: 'att-1',
       messageId: id,
       filename: 'figures.csv',
       mimeType: 'text/csv',
       size: 42,
       contentId: null,
       disposition: 'attachment',
-      kind: 'csv',
-      checksum: 'abc'
+      kind: 'csv'
     })
     const detail = messages.get(id)!
     expect(detail.text).toBe('Body')
@@ -388,7 +386,7 @@ describe('settings persistence', () => {
 
     let db = openDatabase({ file })
     let service = new SettingsService(new KvRepository(db), mirror)
-    service.update({ ui: { theme: 'dark', density: 'compact' }, compose: { undoSeconds: 10 } })
+    service.update({ ui: { theme: 'dark', density: 'compact' }, compose: { undoSendSeconds: 10 } })
     closeDatabase(db)
 
     db = openDatabase({ file })
@@ -396,7 +394,7 @@ describe('settings persistence', () => {
     const restored = service.get()
     expect(restored.ui.theme).toBe('dark')
     expect(restored.ui.density).toBe('compact')
-    expect(restored.compose.undoSeconds).toBe(10)
+    expect(restored.compose.undoSendSeconds).toBe(10)
     // Everything else keeps its default.
     expect(restored.ui.textScale).toBe(DEFAULT_SETTINGS.ui.textScale)
     expect(Object.keys(restored.ui).sort()).toEqual(Object.keys(DEFAULT_SETTINGS.ui).sort())

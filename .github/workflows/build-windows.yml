@@ -1,0 +1,97 @@
+name: Build Windows installer
+
+# Produces Novamail-Setup-x64.exe.
+#
+# Run it from the Actions tab ("Run workflow") or by pushing a tag such as
+# v1.0.0. The installer is attached to the workflow run and, for tags, to a
+# GitHub Release. A Windows runner is required because better-sqlite3 must be
+# compiled against the Electron ABI for win32-x64 and NSIS runs natively.
+
+on:
+  workflow_dispatch:
+    inputs:
+      attach_to_release:
+        description: 'Upload the installer to a GitHub Release (tags only)'
+        type: boolean
+        default: false
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Windows x64 installer
+    runs-on: windows-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+        env:
+          # electron-builder only needs these for publishing; we publish manually.
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Type-check
+        run: npm run typecheck
+
+      - name: Run tests
+        run: npx vitest run
+
+      - name: Build renderer, preload and main
+        run: npx electron-vite build
+
+      - name: Build NSIS installer
+        run: npx electron-builder --win nsis --x64 --publish never
+        env:
+          # No signing certificate is configured, so skip the signing step
+          # instead of failing on it. See docs/SECURITY.md.
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+      - name: Show what was produced
+        shell: pwsh
+        run: |
+          if (-not (Test-Path release)) { throw 'release/ was not created' }
+          Get-ChildItem release | Format-Table Name, Length
+          $exe = Get-ChildItem release -Filter 'Novamail-Setup-x64.exe'
+          if (-not $exe) { throw 'Novamail-Setup-x64.exe was not produced' }
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Novamail-Setup-x64
+          path: |
+            release/Novamail-Setup-x64.exe
+            release/*.blockmap
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Attach installer to the GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Novamail ${{ github.ref_name }}
+          draft: true
+          files: release/Novamail-Setup-x64.exe
+          body: |
+            Novamail - Email, made effortless.
+
+            Download **Novamail-Setup-x64.exe** below and run it.
+
+            The installer is not code-signed, so Windows SmartScreen may show
+            "Windows protected your PC". Choose **More info -> Run anyway**.
+
+            Your mail, accounts and settings are stored in
+            `%APPDATA%\Novamail`, never in the installation folder, so future
+            upgrades keep your data.

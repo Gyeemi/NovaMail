@@ -1971,3 +1971,26 @@ a {
     width: 280px;
   }
 }
+
+/* ------------------------------------------------------------------ demo bar */
+/*
+ * Shown only when the renderer runs in a plain browser with the sample-data
+ * bridge (see mockBridge.ts). It must never appear in the packaged application,
+ * so it is driven by isDemo() rather than a build flag.
+ */
+.demo-banner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: baseline;
+  padding: 7px var(--nm-space-4);
+  font-size: var(--nm-small-size);
+  color: var(--nm-text-secondary);
+  background: var(--nm-accent-soft);
+  border-bottom: 1px solid var(--nm-border);
+}
+
+.demo-banner strong {
+  color: var(--nm-accent-strong);
+  font-weight: 650;
+}
