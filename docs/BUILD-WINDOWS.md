@@ -23,24 +23,49 @@ you have available.
 
 ## Option 1 - GitHub Actions (recommended, nothing to install)
 
-A workflow is already committed at `.github/workflows/build-windows.yml`.
+A workflow is committed at `.github/workflows/build-windows.yml`.
 
-1. Push this branch to GitHub (it is already pushed as
-   `arena/3f3e0882-novamail`).
-2. Open **Actions → Build Windows installer → Run workflow**, choose the branch,
-   click **Run workflow**.
-3. When the ~8 minute job finishes, open the run and download the artifact
-   **`Novamail-Setup-x64`** — it contains `Novamail-Setup-x64.exe`.
+> **GitHub quirk worth knowing:** the **Run workflow** button only appears once
+> the workflow file exists on the **default branch** (`main`). A workflow that
+> only exists on a feature branch can still be triggered by a tag or branch
+> push — that is how the existing `v1.0.0` build was produced — but it will not
+> show up in the Actions sidebar yet. Merge the pull request first if you want
+> the button.
 
-For a versioned release instead, push a tag:
+### Already built: v1.0.0
+
+The first installer was built from tag `v1.0.0`:
+
+- Run: <https://github.com/Gyeemi/NovaMail/actions/runs/40840519047>
+- Artifact `Novamail-Setup-x64` (141 MB, a zip containing
+  `Novamail-Setup-x64.exe`): open the run page and download it from the
+  **Artifacts** section at the bottom.
+- A **draft** release named `Novamail v1.0.0` holds the same `.exe`. Open it from
+  **Releases → Drafts** and click **Publish release** to make a permanent public
+  download link — but read `docs/SECURITY.md` first: the binary is unsigned.
+
+### Building again
+
+**By tag** (works from any branch, also creates a draft release):
 
 ```bash
-git tag v1.0.0
-git push origin v1.0.0
+git tag v1.0.1
+git push origin v1.0.1
 ```
 
-The same workflow then also creates a **draft GitHub Release** with the
-installer attached. Review it in **Releases → Drafts** and click *Publish*.
+**By button** (after the workflow is on `main`):
+
+1. **Actions → Build Windows installer → Run workflow**
+2. Choose the branch, click **Run workflow**
+3. When the job turns green (~5 minutes), open it and download the
+   **`Novamail-Setup-x64`** artifact.
+
+**From the command line:**
+
+```bash
+gh workflow run build-windows.yml --ref arena/3f3e0882-novamail
+gh run watch
+```
 
 What the workflow does, in order:
 
