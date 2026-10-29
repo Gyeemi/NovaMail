@@ -77,6 +77,17 @@ async function renderApp(): Promise<void> {
   })
 }
 
+/** Types like a user: one character per event, through the native value setter. */
+async function typeInto(input: HTMLInputElement, text: string): Promise<void> {
+  const setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!
+  for (const char of text) {
+    await act(async () => {
+      setValue.call(input, input.value + char)
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+  }
+}
+
 describe('application shell', () => {
   it('mounts the demo bridge when Electron is not present', () => {
     expect(window.novamail).toBeTruthy()
@@ -106,6 +117,22 @@ describe('application shell', () => {
     const reader = document.querySelector('.reading-pane')
     expect(reader).toBeTruthy()
     expect(document.querySelectorAll('.attachment-card').length).toBeGreaterThan(0)
+  })
+
+  it('accepts a whole search query, not just the first character', async () => {
+    // Regression: the modal focus bug and stray global key handlers both showed
+    // up as "I can only type one letter". This types a realistic query and
+    // requires every character to land in the field.
+    vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    await renderApp()
+    const search = document.querySelector<HTMLInputElement>('input[aria-label="Search mail"]')
+    expect(search).toBeTruthy()
+    await act(async () => {
+      search!.focus()
+    })
+    await typeInto(search!, 'invoice from:sonam')
+    expect(document.activeElement).toBe(search)
+    expect(search!.value).toBe('invoice from:sonam')
   })
 
   it('opens the composer from the top bar', async () => {

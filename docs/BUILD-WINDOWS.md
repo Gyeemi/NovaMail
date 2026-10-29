@@ -32,7 +32,15 @@ A workflow is committed at `.github/workflows/build-windows.yml`.
 > show up in the Actions sidebar yet. Merge the pull request first if you want
 > the button.
 
-### Already built: v1.0.0
+### Already built: v1.0.1
+
+**Use v1.0.1.** It fixes a bug in v1.0.0 where dialogs accepted only one
+character (see `CHANGELOG.md`).
+
+- Run: <https://github.com/Gyeemi/NovaMail/actions?query=workflow%3A%22Build+Windows+installer%22>
+- Artifact `Novamail-Setup-x64`, or the draft release **Novamail v1.0.1**.
+
+### Previously built: v1.0.0
 
 The first installer was built from tag `v1.0.0`:
 
@@ -72,7 +80,7 @@ What the workflow does, in order:
 ```
 npm ci                     # exact dependency tree from package-lock.json
 npm run typecheck          # tsc, both projects, must be clean
-npx vitest run             # 54 tests
+npx vitest run             # 59 tests
 npx electron-vite build    # out/main, out/preload, out/renderer
 npx electron-builder --win nsis --x64 --publish never
 ```

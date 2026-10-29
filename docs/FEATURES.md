@@ -20,7 +20,7 @@ following is what has actually been *run*:
 | Check | Command | Result |
 |---|---|---|
 | Type check (main + renderer) | `npm run typecheck` | clean, both projects |
-| Unit tests | `npx vitest run tests/unit` | 34 passed |
+| Unit tests | `npx vitest run tests/unit` | 39 passed |
 | Database integration tests | `npx vitest run tests/integration` | 20 passed |
 | Production build | `npx electron-vite build` | success |
 | Pre-packaging audit | `npm run verify` | 11/11 checks pass |
@@ -169,9 +169,10 @@ service, so adding CalDAV/CardDAV later does not touch mail code.
 | `tests/unit/sanitize.test.ts` | 10 | script/handler/iframe stripping, URL schemes, remote-image blocking, cid rewriting, CSS escapes, pathological input |
 | `tests/unit/mail-parse.test.ts` | 8 | real multipart message: envelope, both bodies, attachment bytes, checksums, broken input |
 | `tests/unit/search-and-attachments.test.ts` | 12 | query operators, relative dates, FTS escaping, attachment classification and safety, file-name sanitising |
-| `tests/unit/renderer-smoke.test.tsx` | 4 | the real shell renders, three panes, message opens, composer opens |
+| `tests/unit/renderer-smoke.test.tsx` | 5 | the real shell renders, three panes, message opens, composer opens, a full search query is typed character by character |
+| `tests/unit/modal-typing.test.tsx` | 4 | dialogs keep focus while typing (regression for the 1.0.0 "one letter then blocked" bug) |
 | `tests/integration/database.test.ts` | 20 | migrations, idempotent upsert, threading, FTS search, snooze, labels, rules, signatures, sync queue backoff, settings surviving a restart |
-| **Total** | **54** | all passing |
+| **Total** | **59** | all passing |
 
 Not written yet:
 

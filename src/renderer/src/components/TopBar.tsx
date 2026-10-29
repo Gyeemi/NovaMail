@@ -34,7 +34,12 @@ export function TopBar(): ReactNode {
         searchRef.current?.focus()
         searchRef.current?.select()
       }
-      if (event.key === '/' && document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') {
+      const active = document.activeElement as HTMLElement | null
+      const typing =
+        active?.tagName === 'INPUT' || active?.tagName === 'TEXTAREA' || active?.isContentEditable === true
+      if (event.key === '/' && !typing) {
+        // Never steal focus out of a field - the compose body is a contentEditable,
+        // so a missing isContentEditable check would eat every '/' the user types.
         event.preventDefault()
         searchRef.current?.focus()
       }

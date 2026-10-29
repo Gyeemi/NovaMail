@@ -161,7 +161,7 @@ docs/                   build, account setup, security, privacy, features
 | Command | Result |
 |---|---|
 | `npm run typecheck` | clean (both projects) |
-| `npx vitest run` | 54 passed (34 unit, 20 SQLite integration) |
+| `npx vitest run` | 59 passed (39 unit, 20 SQLite integration) |
 | `npx electron-vite build` | success — main 466 kB, preload 3.1 kB, renderer 896 kB |
 | `npm run verify` | 11/11 checks pass |
 | `npx electron-builder --win nsis` | **not run here** — needs a Windows runner or wine |

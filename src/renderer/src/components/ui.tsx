@@ -185,19 +185,34 @@ export function Modal({ title, onClose, children, footer, size = 'md', headerExt
   const dialogRef = useRef<HTMLDivElement>(null)
   const titleId = useId()
 
+  /*
+   * `onClose` is almost always an inline arrow, so its identity changes on every
+   * render. Using it as an effect dependency re-ran the whole effect after each
+   * keystroke, which re-focused the first element in the dialog and pulled the
+   * caret out of the field the user was typing in - the "only one letter, then
+   * nothing" bug. Hold the latest callback in a ref and run the effect once.
+   */
+  const onCloseRef = useRef(onClose)
+  onCloseRef.current = onClose
+
   useEffect(() => {
     const previouslyFocused = document.activeElement as HTMLElement | null
     const dialog = dialogRef.current
-    const focusable = dialog?.querySelectorAll<HTMLElement>(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-    )
-    const first = focusable?.[0]
-    first?.focus()
+
+    // Focus the most useful control once, on open: an explicit target, else the
+    // first real form field, else the first button.
+    const preferred =
+      dialog?.querySelector<HTMLElement>('[data-autofocus]') ??
+      dialog?.querySelector<HTMLElement>(
+        'input:not([type="hidden"]):not([disabled]), textarea:not([disabled]), select:not([disabled])'
+      ) ??
+      dialog?.querySelector<HTMLElement>('button:not([disabled])')
+    preferred?.focus()
 
     const onKeyDown = (event: KeyboardEvent): void => {
       if (event.key === 'Escape') {
         event.stopPropagation()
-        onClose()
+        onCloseRef.current()
         return
       }
       if (event.key !== 'Tab' || !dialog) return
@@ -221,7 +236,7 @@ export function Modal({ title, onClose, children, footer, size = 'md', headerExt
       document.removeEventListener('keydown', onKeyDown, true)
       previouslyFocused?.focus?.()
     }
-  }, [onClose])
+  }, [])
 
   return (
     <div className="overlay" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
