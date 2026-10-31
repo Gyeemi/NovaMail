@@ -250,7 +250,7 @@ export class AccountService {
     if (account.authType !== 'oauth2' || !account.oauthProvider) {
       return {
         ok: false,
-        error: `${account.email} uses an app password, not OAuth. Use "Change password" in Settings > Accounts to update it.`
+        error: `${account.email} uses an app password, not OAuth. Choose Edit on the account in Settings > Accounts to change its password or servers.`
       }
     }
     return this.startOAuth(account.oauthProvider, account.email, accountId)

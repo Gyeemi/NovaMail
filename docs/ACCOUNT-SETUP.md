@@ -78,6 +78,7 @@ These live in **Settings → Accounts**, on each account's row:
 | **Cancel** (shown while waiting) | Stops waiting for the browser and leaves the account untouched. |
 | **Revoke access** | Asks the provider to invalidate the refresh token, deletes the tokens from this computer, and marks the account **Sign in needed** until you reconnect. |
 | **Test connection** | Opens IMAP and SMTP once with the current credentials and reports the result. |
+| **Edit** | Change the display name, username, IMAP/SMTP host and port, and — for app-password accounts — the password. The email address itself cannot be edited. |
 
 If the account shows **Sign in needed**, the stored token expired or was revoked.
 Novamail does not retry in a loop: it stops and waits for you to reconnect. Your

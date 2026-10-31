@@ -187,6 +187,41 @@ describe('Manage accounts screen', () => {
     expect(document.body.textContent ?? '').toContain('Sign-in cancelled')
   })
 
+  it('opens an edit dialog so a password or server can be changed', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    await openAccounts()
+    const update = vi
+      .spyOn(window.novamail!.api.accounts, 'update')
+      .mockImplementation(async () => oauthAccount)
+
+    const edit = buttonByText('Edit')
+    expect(edit).toBeTruthy()
+    await act(async () => {
+      edit!.click()
+      await new Promise((resolve) => setTimeout(resolve, 40))
+    })
+
+    expect(document.querySelector('[role="dialog"]')).toBeTruthy()
+    const text = document.body.textContent ?? ''
+    expect(text).toContain('Incoming mail (IMAP)')
+    expect(text).toContain('Outgoing mail (SMTP)')
+
+    const save = buttonByText('Save changes')
+    expect(save).toBeTruthy()
+    await act(async () => {
+      save!.click()
+      await new Promise((resolve) => setTimeout(resolve, 60))
+    })
+
+    expect(update).toHaveBeenCalledTimes(1)
+    const payload = update.mock.calls[0]![0] as Record<string, unknown>
+    expect(payload.id).toBe('oauth-1')
+    expect(payload.email).toBe('anna@gmail.example')
+    expect(payload.imap).toEqual({ host: 'imap.gmail.com', port: 993, secure: true })
+    // An OAuth account has no password to send.
+    expect(payload.password).toBeUndefined()
+  })
+
   it('saves a client ID from the app and flips the provider to Ready', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => undefined)
     await openAccounts()

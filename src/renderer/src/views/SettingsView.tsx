@@ -17,6 +17,7 @@ import {
   ConfirmDialog,
   Field,
   IconButton,
+  Modal,
   Segmented,
   Spinner,
   Toggle,
@@ -234,6 +235,7 @@ function AppearanceSettings(): ReactNode {
 function AccountSettings(): ReactNode {
   const { state, actions } = useApp()
   const [removing, setRemoving] = useState<Account | null>(null)
+  const [editing, setEditing] = useState<Account | null>(null)
   const [testing, setTesting] = useState<string | null>(null)
   const [testResult, setTestResult] = useState<Record<string, string>>({})
   /** account id currently waiting for the browser to come back */
@@ -416,6 +418,9 @@ function AccountSettings(): ReactNode {
                 >
                   {testing === account.id ? 'Testing…' : 'Test connection'}
                 </Button>
+                <Button size="sm" icon="settings" onClick={() => setEditing(account)}>
+                  Edit
+                </Button>
                 {!account.isDefault ? (
                   <Button
                     size="sm"
@@ -523,6 +528,17 @@ function AccountSettings(): ReactNode {
         />
       ) : null}
 
+      {editing ? (
+        <EditAccountDialog
+          account={editing}
+          onClose={() => setEditing(null)}
+          onSaved={async () => {
+            setEditing(null)
+            await actions.refreshAccounts()
+          }}
+        />
+      ) : null}
+
       <Section
         title="Sign-in providers (OAuth)"
         description="Google and Microsoft sign-in uses each provider's own page in your default browser. Novamail never sees your password and never stores one."
@@ -609,6 +625,134 @@ function AccountSettings(): ReactNode {
         )}
       </Section>
     </>
+  )
+}
+
+/**
+ * Editing an existing account. Passwords for OAuth accounts are not editable
+ * here - those accounts have none - so the dialog says how to sign in again
+ * instead of showing a field that cannot work.
+ */
+function EditAccountDialog({
+  account,
+  onClose,
+  onSaved
+}: {
+  account: Account
+  onClose: () => void
+  onSaved: () => Promise<void>
+}): ReactNode {
+  const [displayName, setDisplayName] = useState(account.displayName)
+  const [username, setUsername] = useState(account.username)
+  const [imapHost, setImapHost] = useState(account.imap.host)
+  const [imapPort, setImapPort] = useState(String(account.imap.port))
+  const [imapSecure, setImapSecure] = useState(account.imap.secure)
+  const [smtpHost, setSmtpHost] = useState(account.smtp.host)
+  const [smtpPort, setSmtpPort] = useState(String(account.smtp.port))
+  const [smtpSecure, setSmtpSecure] = useState(account.smtp.secure)
+  const [password, setPassword] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const isPasswordAccount = account.authType === 'password'
+
+  const save = async (): Promise<void> => {
+    setBusy(true)
+    setError(null)
+    try {
+      await api.accounts.update({
+        id: account.id,
+        email: account.email,
+        displayName: displayName.trim() || account.email.split('@')[0]!,
+        providerId: account.providerId,
+        authType: account.authType,
+        username: username.trim() || account.email,
+        imap: { host: imapHost.trim(), port: Number(imapPort), secure: imapSecure },
+        smtp: { host: smtpHost.trim(), port: Number(smtpPort), secure: smtpSecure },
+        ...(isPasswordAccount && password ? { password } : {})
+      })
+      await onSaved()
+    } catch (updateError) {
+      setError(errorMessage(updateError))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Modal
+      title={`Edit ${account.email}`}
+      size="md"
+      onClose={onClose}
+      footer={
+        <>
+          <Button onClick={onClose} disabled={busy}>
+            Cancel
+          </Button>
+          <Button variant="primary" onClick={() => void save()} disabled={busy}>
+            {busy ? 'Saving…' : 'Save changes'}
+          </Button>
+        </>
+      }
+    >
+      <div className="stack" style={{ gap: 12 }}>
+        <Field label="Name to show recipients">
+          <input className="input" value={displayName} onChange={(event) => setDisplayName(event.target.value)} />
+        </Field>
+        <Field label="Username" hint="Usually the full email address.">
+          <input className="input" value={username} onChange={(event) => setUsername(event.target.value)} />
+        </Field>
+        <p className="small muted" style={{ margin: 0 }}>
+          The address itself cannot be changed. Add the new address as its own account and remove this one.
+        </p>
+
+        <h4 style={{ margin: '4px 0 0', fontSize: 14 }}>Incoming mail (IMAP)</h4>
+        <div className="row" style={{ gap: 8, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+          <Field label="Server">
+            <input className="input" value={imapHost} onChange={(event) => setImapHost(event.target.value)} />
+          </Field>
+          <Field label="Port">
+            <input className="input" value={imapPort} inputMode="numeric" style={{ width: 90 }} onChange={(event) => setImapPort(event.target.value.replace(/[^0-9]/g, ''))} />
+          </Field>
+          <Toggle checked={imapSecure} onChange={setImapSecure} label="SSL/TLS" />
+        </div>
+
+        <h4 style={{ margin: '4px 0 0', fontSize: 14 }}>Outgoing mail (SMTP)</h4>
+        <div className="row" style={{ gap: 8, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+          <Field label="Server">
+            <input className="input" value={smtpHost} onChange={(event) => setSmtpHost(event.target.value)} />
+          </Field>
+          <Field label="Port">
+            <input className="input" value={smtpPort} inputMode="numeric" style={{ width: 90 }} onChange={(event) => setSmtpPort(event.target.value.replace(/[^0-9]/g, ''))} />
+          </Field>
+          <Toggle checked={smtpSecure} onChange={setSmtpSecure} label="SSL/TLS" />
+        </div>
+
+        {isPasswordAccount ? (
+          <Field label="New password or app password" hint="Leave blank to keep the current one.">
+            <input
+              className="input"
+              type="password"
+              value={password}
+              autoComplete="new-password"
+              disabled={busy}
+              onChange={(event) => setPassword(event.target.value)}
+            />
+          </Field>
+        ) : (
+          <p className="small muted" style={{ margin: 0 }}>
+            This account uses {account.oauthProvider === 'microsoft' ? 'Microsoft' : 'Google'} sign-in, so there is no
+            password to store. Use “{account.syncState === 'auth-required' ? 'Sign in again' : 'Reconnect'}” on the
+            account row to refresh access.
+          </p>
+        )}
+
+        {error ? (
+          <div className="field__error" role="alert">
+            {error}
+          </div>
+        ) : null}
+      </div>
+    </Modal>
   )
 }
 

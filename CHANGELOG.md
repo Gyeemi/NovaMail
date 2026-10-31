@@ -31,6 +31,12 @@ built from them.
   reported as a cancellation (not an error, not a success); a mismatched mailbox
   is refused with a message naming both addresses; a provider error body is no
   longer mistaken for a successful token response.
+- **An account could not be edited at all.** There was no way to correct a
+  display name, server or port, and no way to change a password for an
+  app-password account — even though the reconnect message told the user to do
+  exactly that. Each account now has an **Edit** dialog for name, username, IMAP
+  and SMTP settings, and (for password accounts only) a new password; OAuth
+  accounts point at Sign in again instead of showing an impossible field.
 - **OAuth cancellation had no implementation** even though the IPC result type
   had a `cancelled` field. `cancelOAuth` now interrupts the loopback wait, closes
   the listener and resolves the flow cleanly (no unhandled rejection).
@@ -41,10 +47,10 @@ built from them.
   `accounts.setOAuthClient` over IPC (validated, preload allowlist updated, and
   implemented in the browser demo bridge).
 - `accounts:changed` event so every window repaints account badges immediately.
-- 29 new tests: 10 exercise the real loopback listener and PKCE exchange against a
+- 30 new tests: 10 exercise the real loopback listener and PKCE exchange against a
   stubbed provider (PKCE challenge, state mismatch, provider denial, cancellation,
   `invalid_grant`, tenant handling, client-ID masking), 14 cover the account
-  management logic, 5 drive the Settings screen through the UI.
+  management logic, 6 drive the Settings screen through the UI.
 - Account setup guide: how to register the Google and Microsoft apps, the redirect
   addresses, and what each account action does.
 

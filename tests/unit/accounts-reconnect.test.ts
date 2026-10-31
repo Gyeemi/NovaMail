@@ -168,7 +168,7 @@ describe('Sign in again (reconnect)', () => {
     const result = await test.service.reconnect('acc-1')
 
     expect(result.ok).toBe(false)
-    expect(result.error).toMatch(/Change password/i)
+    expect(result.error).toMatch(/Choose Edit/i)
     expect(test.signIn).not.toHaveBeenCalled()
   })
 
