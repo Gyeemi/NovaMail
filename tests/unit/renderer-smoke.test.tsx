@@ -135,6 +135,54 @@ describe('application shell', () => {
     expect(search!.value).toBe('invoice from:sonam')
   })
 
+  it('lays the shell out as banner, top bar, body, footer', async () => {
+    // Regression: the top bar regions had no CSS, so their children stacked
+    // vertically and overflowed into the banner and the reading pane.
+    vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    await renderApp()
+    const shell = document.querySelector('.app-shell')!
+    const order = [...shell.children].map((child) => child.className)
+    expect(order[0]).toContain('demo-banner')
+    expect(order[1]).toContain('topbar')
+    expect(order[2]).toContain('app-body')
+    expect(order[order.length - 1]).toContain('app-footer')
+
+    // The three top bar regions must exist as siblings of one another.
+    const topbar = document.querySelector('.topbar')!
+    const regions = [...topbar.children].map((child) => child.className)
+    expect(regions.some((name) => name.includes('topbar__left'))).toBe(true)
+    expect(regions.some((name) => name.includes('topbar__search'))).toBe(true)
+    expect(regions.some((name) => name.includes('topbar__right'))).toBe(true)
+
+    // Every region's children stay inside that region.
+    const right = document.querySelector('.topbar__right')!
+    expect(right.querySelector('.avatar-button')).toBeTruthy()
+    expect(right.querySelector('.btn--primary')).toBeTruthy()
+  })
+
+  it('gives each list row an actions column instead of wrapping it', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    await renderApp()
+    const item = document.querySelector('.list-item')!
+    expect(item).toBeTruthy()
+    // check, avatar, body, actions - four direct children, no wrapped row.
+    expect(item.children.length).toBe(4)
+    expect(item.querySelector('.list-item__actions')).toBeTruthy()
+  })
+
+  it('offers a back control in the reader for the narrow layout', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    await renderApp()
+    const first = document.querySelector<HTMLElement>('[data-message-id]')!
+    await act(async () => {
+      first.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 80))
+    })
+    const workspace = document.querySelector('.workspace')!
+    expect(workspace.getAttribute('data-has-message')).toBe('true')
+    expect(document.querySelector('.reader-back')).toBeTruthy()
+  })
+
   it('opens the composer from the top bar', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => undefined)
     await renderApp()

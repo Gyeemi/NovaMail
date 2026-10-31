@@ -5,6 +5,41 @@ built from them.
 
 ---
 
+## 1.0.2 — layout repair
+
+### Fixed
+
+- **The top bar had no layout.** `.topbar__left`, `.topbar__search` and
+  `.topbar__right` were never defined in CSS, so each region's children stacked
+  vertically. That is why Compose floated over the browser-preview banner and the
+  notification bell, settings gear and account button appeared to sit inside the
+  reading pane. All three regions are now proper flex rows.
+- **Message rows wrapped their action buttons onto a second line.** The row grid
+  reserved three columns while the markup has four (checkbox, avatar, body,
+  actions). The fourth column now exists.
+- **79 classes used by the components had no CSS at all**, covering the popovers,
+  the composer's header/fields/footer, the spreadsheet and slide previews, the
+  settings sidebar, the setup wizard and the attachment toolbar. They all fall
+  back to sensible defaults now.
+- **Narrow windows squeezed three panes into less width than they need.** Below
+  900 px the sidebar becomes an icon rail and the reading pane slides over the
+  message list, with a Back button in the reader toolbar. Below 760 px the list
+  is single column, the footer hides and toasts span the window.
+- Brand name and tagline ran together ("NovamailEmail, made effortless"): the
+  tagline class was unstyled and the text was one line.
+
+### Added
+
+- `tests/unit/classnames.test.ts` — fails the build if any `className` used in
+  the renderer has no matching rule, so this class of bug cannot ship again.
+- Shell structure assertions in the renderer smoke test: banner above the top
+  bar, the three top-bar regions, four list-item columns, and the reader Back
+  control.
+
+Tests: 72 (was 67).
+
+---
+
 ## 1.0.1 — typing fix
 
 ### Fixed

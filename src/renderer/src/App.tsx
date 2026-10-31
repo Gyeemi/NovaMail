@@ -50,7 +50,12 @@ export function App(): ReactNode {
       <div className="app-body">
         {state.settings && !state.settings.ui.sidebarCollapsed ? <Sidebar /> : null}
 
-        <main className="workspace" aria-label="Mail workspace">
+        <main
+          className="workspace"
+          aria-label="Mail workspace"
+          data-has-message={state.activeId ? 'true' : 'false'}
+          data-pane={readingPane}
+        >
           {showList ? (
             readingPane === 'bottom' ? (
               <div className="mail-stack">

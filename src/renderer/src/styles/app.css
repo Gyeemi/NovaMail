@@ -1099,11 +1099,12 @@ a {
   position: fixed;
   right: var(--nm-space-4);
   bottom: var(--nm-space-4);
+  /* never let a toast push past the window edge on a narrow screen */
+  max-width: min(420px, calc(100vw - 2 * var(--nm-space-4)));
   display: flex;
   flex-direction: column;
   gap: var(--nm-space-2);
   z-index: 90;
-  max-width: 420px;
 }
 
 .toast {
@@ -1944,40 +1945,8 @@ a {
   color: var(--nm-text-muted);
 }
 
-/* responsive: narrow windows drop the reading pane into a stacked layout */
+/* Responsive rules live at the end of the sheet. */
 
-@media (max-width: 1180px) {
-  .sidebar {
-    width: 200px;
-  }
-  .list-pane {
-    width: 320px;
-  }
-}
-
-@media (max-width: 980px) {
-  .brand__tag,
-  .sync-pill__text {
-    display: none;
-  }
-  .sidebar {
-    width: 76px;
-  }
-  .sidebar .nav-item__label,
-  .sidebar .nav-section__title {
-    display: none;
-  }
-  .list-pane {
-    width: 280px;
-  }
-}
-
-/* ------------------------------------------------------------------ demo bar */
-/*
- * Shown only when the renderer runs in a plain browser with the sample-data
- * bridge (see mockBridge.ts). It must never appear in the packaged application,
- * so it is driven by isDemo() rather than a build flag.
- */
 .demo-banner {
   display: flex;
   flex-wrap: wrap;
@@ -1993,4 +1962,1085 @@ a {
 .demo-banner strong {
   color: var(--nm-accent-strong);
   font-weight: 650;
+}
+
+/* ==========================================================================
+   COMPONENT CLASS RECONCILIATION
+   --------------------------------------------------------------------------
+   A number of classes used by the components had no rule at all, so those
+   elements fell back to default block layout: the top bar's regions stacked
+   vertically (pushing Compose and the account button out of the bar), the list
+   item actions wrapped onto their own line, dialogs ran edge to edge. This
+   block gives every class the components actually use a real definition, in
+   the same visual language as the rest of the sheet.
+   `tests/unit/classnames.test.ts` fails the build if a new class is added
+   without styling, so this cannot drift again.
+   ========================================================================== */
+
+/* ---------------------------------------------------------------- app shell */
+
+.app-shell--loading {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  background: var(--nm-bg);
+}
+
+.mail-stack {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  gap: var(--nm-space-2);
+}
+
+.mail-stack .list-pane {
+  width: 100%;
+  flex: 0 0 45%;
+}
+
+/* The demo banner must never be overlapped by the top bar. It is a normal
+   flex child of .app-shell, so it simply takes its own row. */
+.demo-banner {
+  flex-shrink: 0;
+}
+
+/* ------------------------------------------------------------------ top bar */
+
+.topbar__left {
+  display: flex;
+  align-items: center;
+  gap: var(--nm-space-3);
+  min-width: 0;
+  flex-shrink: 0;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.brand__text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+  min-width: 0;
+  line-height: 1.15;
+}
+
+.brand__tagline,
+.brand__tag {
+  font-size: var(--nm-tiny-size);
+  color: var(--nm-text-muted);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.topbar__search {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  justify-content: center;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.topbar__search .searchbar {
+  width: 100%;
+  min-width: 0;
+}
+
+/* Alias kept for older markup. */
+.topbar__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--nm-space-2);
+  margin-left: auto;
+}
+
+.topbar__right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--nm-space-2);
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.topbar__right > * {
+  flex-shrink: 0;
+}
+
+.searchbar__hint {
+  font-size: var(--nm-tiny-size);
+  color: var(--nm-text-muted);
+  border: 1px solid var(--nm-border);
+  border-radius: 6px;
+  padding: 2px 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.avatar-button {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--nm-border);
+  background: linear-gradient(150deg, var(--nm-accent), var(--nm-accent-strong));
+  color: var(--nm-accent-contrast);
+  font-weight: 700;
+  font-size: var(--nm-small-size);
+  display: inline-grid;
+  place-items: center;
+  cursor: pointer;
+  box-shadow: var(--nm-raised-sm);
+  flex-shrink: 0;
+}
+
+.avatar-button:hover {
+  filter: brightness(1.06);
+}
+
+.badge-dot {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--nm-danger);
+  border: 1.5px solid var(--nm-bg);
+  pointer-events: none;
+}
+
+/* ----------------------------------------------------------------- popovers */
+
+.popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 260px;
+  max-width: 340px;
+  background: var(--nm-surface-raised);
+  border: 1px solid var(--nm-border);
+  border-radius: var(--nm-radius);
+  box-shadow: var(--nm-floating);
+  padding: 6px;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.popover--account {
+  min-width: 280px;
+}
+
+.popover__header {
+  padding: 8px 10px 6px;
+  font-size: var(--nm-tiny-size);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--nm-text-muted);
+  font-weight: 700;
+}
+
+.popover__row {
+  display: flex;
+  align-items: center;
+  gap: var(--nm-space-2);
+  padding: 7px 10px;
+  border-radius: var(--nm-radius-sm);
+  font-size: var(--nm-small-size);
+  min-width: 0;
+}
+
+.popover__item {
+  display: flex;
+  align-items: center;
+  gap: var(--nm-space-2);
+  width: 100%;
+  padding: 9px 10px;
+  border: none;
+  background: transparent;
+  border-radius: var(--nm-radius-sm);
+  font-size: var(--nm-small-size);
+  color: var(--nm-text);
+  cursor: pointer;
+  text-align: left;
+  min-width: 0;
+}
+
+.popover__item:hover {
+  background: var(--nm-accent-soft);
+}
+
+.popover__divider {
+  height: 1px;
+  background: var(--nm-border);
+  margin: 5px 4px;
+}
+
+.popover__footer {
+  border-top: 1px solid var(--nm-border);
+  margin-top: 4px;
+  padding: 8px 10px 4px;
+}
+
+.link-button {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--nm-accent-strong);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.link-button:hover {
+  color: var(--nm-accent);
+}
+
+/* ------------------------------------------------------------- suggestions */
+
+.suggestions {
+  box-shadow: var(--nm-floating);
+}
+
+.suggestion__value {
+  font-weight: 600;
+  color: var(--nm-text);
+  flex-shrink: 0;
+}
+
+.suggestion__desc {
+  color: var(--nm-text-muted);
+  font-size: var(--nm-small-size);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.suggestion__kind {
+  margin-left: auto;
+  font-size: var(--nm-tiny-size);
+  color: var(--nm-text-muted);
+  border: 1px solid var(--nm-border);
+  border-radius: var(--nm-radius-pill);
+  padding: 1px 7px;
+  flex-shrink: 0;
+}
+
+.suggestion--muted {
+  color: var(--nm-text-muted);
+  font-size: var(--nm-small-size);
+  cursor: default;
+}
+
+/* ----------------------------------------------------------------- sidebar */
+
+.nav-section {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nav-item--sub {
+  padding-left: calc(var(--nm-space-3) + 26px);
+  font-size: var(--nm-small-size);
+}
+
+.nav-item--account .nav-item__label {
+  font-size: var(--nm-small-size);
+}
+
+.nav-item--add {
+  color: var(--nm-accent-strong);
+  font-weight: 600;
+  border: 1px dashed var(--nm-border-strong);
+  justify-content: flex-start;
+}
+
+.nav-item--add:hover {
+  border-color: var(--nm-accent);
+  background: var(--nm-accent-soft);
+}
+
+.nav-item--small {
+  padding: 7px var(--nm-space-3);
+  font-size: var(--nm-small-size);
+  color: var(--nm-text-secondary);
+}
+
+.nav-empty {
+  margin: 0;
+  padding: 6px var(--nm-space-3);
+  font-size: var(--nm-small-size);
+  color: var(--nm-text-muted);
+}
+
+/* --------------------------------------------------------------- mail list */
+
+.list-pane > .list-toolbar {
+  flex-shrink: 0;
+}
+
+.list-toolbar > .spacer {
+  margin-left: auto;
+}
+
+.segmented--compact {
+  padding: 3px;
+  gap: 2px;
+}
+
+.segmented--compact .segmented__option {
+  padding: 5px 10px;
+  font-size: var(--nm-tiny-size);
+}
+
+.select--compact {
+  height: 32px;
+  padding: 0 8px;
+  font-size: var(--nm-small-size);
+}
+
+/* Four columns: checkbox, avatar, body, actions. Without the fourth column the
+   action buttons wrapped onto their own row and each message looked broken. */
+.list-item {
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+}
+
+.list-item__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin-top: -2px;
+}
+
+.icon-btn--bare {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  color: var(--nm-text-muted);
+  opacity: 0.85;
+}
+
+.icon-btn--bare:hover:not(:disabled) {
+  opacity: 1;
+}
+
+.icon-btn--bare.is-on {
+  color: var(--nm-warning);
+  opacity: 1;
+}
+
+.list-item__flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: var(--nm-tiny-size);
+  color: var(--nm-text-muted);
+}
+
+.thread-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: var(--nm-radius-pill);
+  background: var(--nm-accent-soft);
+  color: var(--nm-accent-strong);
+  font-size: var(--nm-tiny-size);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* ------------------------------------------------------------ reading pane */
+
+.reader-frame {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  border: none;
+  background: transparent;
+  display: block;
+}
+
+.reader-sender__from,
+.reader-sender__name {
+  font-size: var(--nm-base-size);
+  font-weight: 650;
+  color: var(--nm-text);
+  min-width: 0;
+}
+
+.divider-vertical {
+  width: 1px;
+  align-self: stretch;
+  min-height: 20px;
+  background: var(--nm-border);
+  margin: 0 2px;
+  flex-shrink: 0;
+}
+
+.attachment-card__main {
+  display: flex;
+  align-items: center;
+  gap: var(--nm-space-2);
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+}
+
+/* --------------------------------------------------------------- composer */
+
+.overlay--composer {
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: var(--nm-space-4);
+  background: rgba(16, 22, 28, 0.42);
+}
+
+.composer__header {
+  display: flex;
+  align-items: center;
+  gap: var(--nm-space-2);
+  padding: var(--nm-space-3) var(--nm-space-4);
+  border-bottom: 1px solid var(--nm-border);
+  background: var(--nm-header);
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+.composer__fields {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.composer__label {
+  font-size: var(--nm-small-size);
+  font-weight: 600;
+  color: var(--nm-text-muted);
+  min-width: 56px;
+  flex-shrink: 0;
+}
+
+.composer__subject {
+  width: 100%;
+  border: none;
+  background: transparent;
+  font-size: var(--nm-base-size);
+  font-weight: 600;
+  color: var(--nm-text);
+  padding: 10px 0;
+  outline: none;
+  font-family: inherit;
+}
+
+.composer__editor-area {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  position: relative;
+}
+
+.composer__editor-area .editor {
+  flex: 1;
+  min-height: 140px;
+}
+
+.editor--plain {
+  width: 100%;
+  border: none;
+  outline: none;
+  resize: none;
+  background: transparent;
+  font-family: var(--nm-font);
+  font-size: var(--nm-base-size);
+  line-height: 1.6;
+  color: var(--nm-text);
+  padding: var(--nm-space-3) var(--nm-space-4);
+}
+
+.composer__footer {
+  display: flex;
+  align-items: center;
+  gap: var(--nm-space-2);
+  padding: var(--nm-space-3) var(--nm-space-4);
+  border-top: 1px solid var(--nm-border);
+  background: var(--nm-header);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.composer__sending {
+  font-size: var(--nm-small-size);
+  color: var(--nm-text-muted);
+}
+
+.toolbar-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 8px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--nm-text-secondary);
+  font-size: var(--nm-small-size);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.toolbar-button:hover:not(:disabled) {
+  background: var(--nm-accent-soft);
+  color: var(--nm-text);
+}
+
+.toolbar-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.chip--muted {
+  background: var(--nm-surface-sunken);
+  color: var(--nm-text-muted);
+  border-color: var(--nm-border);
+}
+
+/* --------------------------------------------------------- attachment view */
+
+.preview-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--nm-space-2);
+  padding: 8px var(--nm-space-3);
+  border-bottom: 1px solid var(--nm-border);
+  background: var(--nm-header);
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.preview-image {
+  display: grid;
+  place-items: center;
+  flex: 1;
+  min-height: 0;
+  padding: var(--nm-space-4);
+  overflow: auto;
+}
+
+.preview-image img {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: var(--nm-radius-sm);
+  box-shadow: var(--nm-raised-sm);
+}
+
+.preview-media {
+  display: grid;
+  place-items: center;
+  flex: 1;
+  min-height: 0;
+  padding: var(--nm-space-4);
+}
+
+.preview-media audio,
+.preview-media video {
+  max-width: 100%;
+  border-radius: var(--nm-radius-sm);
+}
+
+.html-preview {
+  flex: 1;
+  width: 100%;
+  min-height: 320px;
+  border: none;
+  background: #ffffff;
+  border-radius: var(--nm-radius-sm);
+}
+
+/* Spreadsheet preview */
+
+.sheet-table-wrap {
+  overflow: auto;
+  flex: 1;
+  min-height: 0;
+  border: 1px solid var(--nm-border);
+  border-radius: var(--nm-radius-sm);
+  background: var(--nm-surface-raised);
+}
+
+.sheet-table {
+  border-collapse: collapse;
+  font-size: var(--nm-small-size);
+  min-width: 100%;
+  font-variant-numeric: tabular-nums;
+}
+
+.sheet-table th,
+.sheet-table td {
+  border: 1px solid var(--nm-border);
+  padding: 6px 10px;
+  text-align: left;
+  white-space: nowrap;
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sheet-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--nm-surface-sunken);
+  font-weight: 700;
+  z-index: 1;
+}
+
+.sheet-tab {
+  border: 1px solid transparent;
+  background: transparent;
+  padding: 5px 10px;
+  border-radius: var(--nm-radius-sm);
+  font-size: var(--nm-small-size);
+  color: var(--nm-text-secondary);
+  cursor: pointer;
+}
+
+.sheet-tab.is-active {
+  background: var(--nm-surface-raised);
+  border-color: var(--nm-border);
+  box-shadow: var(--nm-raised-sm);
+  color: var(--nm-text);
+  font-weight: 650;
+}
+
+/* Slide preview */
+
+.slide-preview {
+  display: flex;
+  gap: var(--nm-space-3);
+  flex: 1;
+  min-height: 0;
+  padding: var(--nm-space-3);
+}
+
+.slide-thumbs {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto;
+  flex-shrink: 0;
+  width: 132px;
+}
+
+.slide-thumb {
+  border: 1px solid var(--nm-border);
+  background: var(--nm-surface-raised);
+  border-radius: var(--nm-radius-sm);
+  padding: 6px 8px;
+  font-size: var(--nm-tiny-size);
+  color: var(--nm-text-secondary);
+  text-align: left;
+  cursor: pointer;
+  line-height: 1.35;
+}
+
+.slide-thumb.is-active {
+  border-color: var(--nm-accent);
+  box-shadow: var(--nm-raised-sm);
+  color: var(--nm-text);
+  font-weight: 600;
+}
+
+.slide-stage {
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  background: var(--nm-surface-raised);
+  border: 1px solid var(--nm-border);
+  border-radius: var(--nm-radius);
+  padding: var(--nm-space-4);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ------------------------------------------------------------- pdf viewer */
+
+.pdf-viewer {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  gap: var(--nm-space-2);
+}
+
+.pdf-viewer__nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--nm-space-2);
+  padding: 6px 0;
+  flex-shrink: 0;
+}
+
+.pdf-viewer canvas {
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+  border-radius: 6px;
+  box-shadow: var(--nm-raised-sm);
+  background: #ffffff;
+}
+
+/* --------------------------------------------------------------- settings */
+
+.settings {
+  display: grid;
+  grid-template-columns: 236px minmax(0, 1fr);
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.settings__nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--nm-space-3);
+  border-right: 1px solid var(--nm-border);
+  background: var(--nm-header);
+  overflow-y: auto;
+}
+
+.settings-tab {
+  display: flex;
+  align-items: center;
+  gap: var(--nm-space-2);
+  width: 100%;
+  text-align: left;
+  padding: 9px 12px;
+  border: 1px solid transparent;
+  border-radius: var(--nm-radius-sm);
+  background: transparent;
+  color: var(--nm-text-secondary);
+  font: inherit;
+  font-size: var(--nm-small-size);
+  cursor: pointer;
+}
+
+.settings-tab:hover {
+  background: var(--nm-accent-soft);
+  color: var(--nm-text);
+}
+
+.settings-tab.is-active {
+  background: var(--nm-surface-raised);
+  border-color: var(--nm-border);
+  box-shadow: var(--nm-raised-sm);
+  color: var(--nm-text);
+  font-weight: 650;
+}
+
+.settings__content {
+  overflow-y: auto;
+  min-height: 0;
+  padding: var(--nm-space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--nm-space-5);
+  max-width: 900px;
+}
+
+.settings-group__body {
+  display: flex;
+  flex-direction: column;
+}
+
+.settings-group__desc {
+  margin: 0 0 var(--nm-space-3);
+  padding: 0 var(--nm-space-4);
+  font-size: var(--nm-small-size);
+  color: var(--nm-text-muted);
+}
+
+.swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--nm-surface-raised);
+  box-shadow: var(--nm-raised-sm);
+  cursor: pointer;
+  padding: 0;
+}
+
+.swatch.is-active {
+  outline: 2px solid var(--nm-focus);
+  outline-offset: 2px;
+}
+
+.account-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: var(--nm-space-3);
+  border: 1px solid var(--nm-border);
+  border-radius: var(--nm-radius);
+  background: var(--nm-surface-raised);
+}
+
+.account-dot--lg {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ------------------------------------------------------------ setup wizard */
+
+.input--lg {
+  height: 48px;
+  font-size: var(--nm-base-size);
+  padding: 0 var(--nm-space-4);
+}
+
+.provider-card__name {
+  font-weight: 650;
+  font-size: var(--nm-small-size);
+  color: var(--nm-text);
+}
+
+.provider-card__meta {
+  font-size: var(--nm-tiny-size);
+  color: var(--nm-text-muted);
+  line-height: 1.4;
+}
+
+.wizard__step-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--nm-accent-soft);
+  color: var(--nm-accent-strong);
+  font-size: 11px;
+  font-weight: 700;
+  margin-right: 4px;
+}
+
+.wizard__steps li.is-done .wizard__step-index {
+  background: var(--nm-accent);
+  color: var(--nm-accent-contrast);
+}
+
+/* ------------------------------------------------------------- narrow view */
+
+@media (max-width: 1100px) {
+  .topbar__search {
+    max-width: none;
+  }
+  .brand__text {
+    display: none;
+  }
+}
+
+
+/* ==========================================================================
+   RESPONSIVE SHELL
+   --------------------------------------------------------------------------
+   The window is resizable and the preview panel is often narrow, so the shell
+   collapses in steps. The old rules only shrank a pane width at two breakpoints,
+   which let the three panes demand more width than they had and overlap.
+
+     > 1100  three panes, full brand
+   900-1100  three panes, brand text and sync label hidden
+   760-900   icon rail + list + reader; the reader slides over the list when a
+             message is open (with a Back button), so nothing is squeezed
+     < 760   same, plus a single-column list and full-width toasts
+   ========================================================================== */
+
+.reader-back {
+  display: none;
+}
+
+@media (max-width: 1280px) {
+  .sidebar {
+    width: 220px;
+  }
+  .list-pane {
+    width: 340px;
+  }
+  .topbar__search {
+    max-width: 520px;
+  }
+}
+
+@media (max-width: 1100px) {
+  .brand__text {
+    display: none;
+  }
+  .sync-pill__text {
+    display: none;
+  }
+  .sync-pill {
+    padding: 6px 9px;
+  }
+  .sidebar {
+    width: 200px;
+  }
+  .list-pane {
+    width: 320px;
+  }
+}
+
+@media (max-width: 900px) {
+  /* icon rail */
+  .sidebar {
+    width: 68px;
+    align-items: stretch;
+  }
+  .sidebar__scroll {
+    padding: var(--nm-space-3) 8px;
+    gap: var(--nm-space-3);
+  }
+  .nav-section__title,
+  .sidebar .nav-item__label,
+  .sidebar .nav-item__count {
+    display: none;
+  }
+  .nav-item {
+    justify-content: center;
+    gap: 0;
+    padding: 10px 0;
+  }
+  .nav-item--sub {
+    padding-left: 0;
+  }
+  .nav-item--add {
+    justify-content: center;
+  }
+  /* The sync state is already shown by the status dot on the list toolbar;
+     hiding the pill here keeps the bar from crowding at narrow widths. */
+  .sync-pill {
+    display: none;
+  }
+  .sidebar__footer .nav-item {
+    padding: 9px 0;
+  }
+
+  /* list takes everything, reader becomes a drill-down panel over it */
+  .workspace {
+    position: relative;
+  }
+  .list-pane {
+    width: auto;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .reading-pane {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    min-width: 0;
+    display: none;
+    background: var(--nm-surface);
+  }
+  .workspace[data-has-message='true'][data-pane='right'] .reading-pane,
+  .workspace[data-has-message='true'][data-pane='bottom'] .reading-pane {
+    display: flex;
+  }
+  .reader-back {
+    display: inline-flex;
+  }
+  /* bottom mode still stacks, it just stops being absolute */
+  .mail-stack {
+    width: 100%;
+  }
+  .mail-stack .list-pane {
+    flex: 0 0 46%;
+  }
+  .mail-stack .reading-pane {
+    position: static;
+    display: flex;
+  }
+}
+
+@media (max-width: 760px) {
+  .topbar {
+    padding: 0 var(--nm-space-2);
+    gap: var(--nm-space-2);
+  }
+  .topbar__search .searchbar__hint {
+    display: none;
+  }
+  .topbar__right .btn--primary {
+    padding: 0 12px;
+  }
+  .list-pane {
+    width: 100%;
+  }
+  .app-footer {
+    display: none;
+  }
+  .toast-stack {
+    left: var(--nm-space-2);
+    right: var(--nm-space-2);
+    bottom: var(--nm-space-2);
+    max-width: none;
+  }
+  .settings {
+    grid-template-columns: minmax(0, 1fr);
+    overflow-y: auto;
+  }
+  .settings__nav {
+    flex-direction: row;
+    overflow-x: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--nm-border);
+  }
+  .settings-tab {
+    width: auto;
+    white-space: nowrap;
+  }
+  .demo-banner {
+    padding: 6px var(--nm-space-2);
+    font-size: var(--nm-tiny-size);
+  }
+  .composer {
+    width: 100%;
+    max-width: none;
+  }
 }

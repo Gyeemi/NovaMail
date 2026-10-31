@@ -72,6 +72,13 @@ export function ReadingPane(): ReactNode {
         </div>
 
         <div className="reader-toolbar">
+          {/* Visible only in the narrow layout, where the reader covers the list. */}
+          <IconButton
+            icon="chevronLeft"
+            label="Back to the message list"
+            className="reader-back"
+            onClick={() => void actions.selectMessage(null)}
+          />
           <IconButton icon="reply" label="Reply" onClick={() => void actions.openCompose('reply')} />
           <IconButton icon="replyAll" label="Reply to all" onClick={() => void actions.openCompose('replyAll')} />
           <IconButton icon="forward" label="Forward" onClick={() => void actions.openCompose('forward')} />
