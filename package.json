@@ -1,0 +1,65 @@
+{
+  "name": "novamail",
+  "productName": "Novamail",
+  "version": "1.0.4",
+  "description": "Novamail - Email, made effortless. A professional desktop email client.",
+  "author": {
+    "name": "Baraily Inovex",
+    "email": "support@barailyinovex.example"
+  },
+  "license": "SEE LICENSE IN LICENSE",
+  "copyright": "Copyright \u00a9 2026 Baraily Inovex",
+  "private": true,
+  "main": "./out/main/index.js",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "electron-vite dev",
+    "dev:renderer": "vite --config vite.renderer.preview.config.mts",
+    "start": "electron-vite preview",
+    "build": "npm run typecheck && electron-vite build",
+    "build:fast": "electron-vite build",
+    "typecheck": "tsc -p tsconfig.node.json --noEmit && tsc -p tsconfig.web.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "rebuild": "electron-builder install-app-deps",
+    "dist:win": "npm run build && electron-builder --win nsis --x64",
+    "dist:dir": "npm run build:fast && electron-builder --dir",
+    "verify": "node scripts/verify-build.mjs",
+    "dist:win:portable": "npm run build && electron-builder --win portable --x64",
+    "design:tokens": "node scripts/design-tokens.mjs"
+  },
+  "dependencies": {
+    "better-sqlite3": "13.0.3",
+    "exceljs": "4.4.0",
+    "imapflow": "2.9.1",
+    "jszip": "3.10.2",
+    "mailparser": "3.12.4",
+    "mammoth": "1.13.0",
+    "nodemailer": "10.3.0",
+    "pdfjs-dist": "^5.4.624",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "sanitize-html": "2.18.1",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1",
+    "@types/better-sqlite3": "7.6.13",
+    "@types/node": "22.19.1",
+    "@types/react": "19.2.2",
+    "@types/react-dom": "19.2.1",
+    "@types/sanitize-html": "2.16.0",
+    "@vitejs/plugin-react": "6.1.2",
+    "electron": "45.1.0",
+    "electron-builder": "26.18.0",
+    "electron-vite": "6.0.0",
+    "jsdom": "27.1.0",
+    "typescript": "5.9.3",
+    "vite": "8.3.5",
+    "vitest": "5.0.5"
+  }
+}

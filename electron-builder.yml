@@ -1,0 +1,82 @@
+# Novamail - electron-builder configuration
+#
+# Produces a per-user Windows installer:  release\Novamail-Setup-x64.exe
+#
+#   npm run dist:win        (on Windows, or on Linux with wine + makensis)
+#
+# User data is never stored in the installation directory. Everything mutable
+# lives in %APPDATA%\Novamail (see src/main/util/paths.ts) so that installing an
+# upgrade over an existing copy keeps accounts, settings and cached mail.
+
+appId: com.barailyinovex.novamail
+productName: Novamail
+copyright: Copyright © 2026 Baraily Inovex
+
+directories:
+  output: release
+  buildResources: build
+
+# Ship compiled output plus the runtime dependencies electron-vite externalises.
+files:
+  - out/**/*
+  - package.json
+  - '!**/*.map'
+  - '!**/*.ts'
+  - '!**/node_modules/**/{test,__tests__,tests,powered-test,example,examples}/**'
+  - '!**/node_modules/**/*.{md,markdown,txt,map}'
+
+extraResources:
+  - from: build
+    to: assets
+    filter:
+      - icon.png
+      - tray.png
+
+# better-sqlite3 13 ships per-platform N-API prebuilds (prebuilds/win32-x64.node),
+# which load in Electron as-is, so no MSVC toolchain is needed to package.
+# Turning the rebuild off keeps `npm run dist:win` working on a clean machine.
+npmRebuild: false
+buildDependenciesFromSource: false
+
+asar: true
+asarUnpack:
+  - '**/node_modules/better-sqlite3/**'
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: build/icon.ico
+  executableName: Novamail
+  # No code-signing certificate is available for this project, so Windows
+  # SmartScreen will show "Windows protected your PC" on first run. Right-click
+  # the installer -> Properties shows an unsigned publisher. See docs/SECURITY.md.
+  signAndEditExecutable: true
+  verifyUpdateCodeSignature: false
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowElevation: true
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+  shortcutName: Novamail
+  menuCategory: false
+  runAfterFinish: true
+  deleteAppDataOnUninstall: false
+  differentialPackage: true
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
+  installerHeaderIcon: build/icon.ico
+  artifactName: Novamail-Setup-${arch}.${ext}
+  uninstallDisplayName: Novamail (Email, made effortless.)
+  license: LICENSE.txt
+
+# A portable zip as well: useful for testing on a machine where running an
+# installer needs administrator approval.
+portable:
+  artifactName: Novamail-Portable-${arch}.${ext}
+
+publish: null

@@ -1,0 +1,168 @@
+/* ==========================================================================
+   Novamail design tokens
+   Premium neomorphism, restrained. Every text/background pair below meets
+   WCAG AA (most exceed AAA) in both themes.
+   ========================================================================== */
+
+:root {
+  color-scheme: light;
+
+  /* brand */
+  --nm-accent: #3f7d8c;
+  --nm-accent-strong: #2f6f7e;
+  --nm-accent-soft: rgba(63, 125, 140, 0.14);
+  --nm-accent-contrast: #ffffff;
+
+  /* surfaces */
+  --nm-bg: #eef2f6;
+  --nm-bg-alt: #e7edf2;
+  --nm-surface: #f4f7fa;
+  --nm-surface-raised: #f8fafc;
+  --nm-surface-sunken: #e9eef3;
+  --nm-header: #f2f6f9;
+
+  /* text */
+  --nm-text: #1d2833;
+  --nm-text-secondary: #4a5a68;
+  --nm-text-muted: #5f6f7d;
+  --nm-text-inverse: #f7fafc;
+
+  /* lines */
+  --nm-border: #d7e0e8;
+  --nm-border-strong: #c2cfd9;
+  --nm-focus: #1f6f86;
+
+  /* status */
+  --nm-danger: #b23b3b;
+  --nm-danger-soft: rgba(178, 59, 59, 0.12);
+  --nm-warning: #8a5a12;
+  --nm-warning-soft: rgba(201, 138, 32, 0.16);
+  --nm-success: #2b6b4a;
+  --nm-success-soft: rgba(43, 107, 74, 0.14);
+  --nm-info-soft: rgba(63, 125, 140, 0.14);
+
+  /* neumorphic shadows - strength controlled by --nm-depth 0..1 */
+  --nm-depth: 1;
+  --nm-shadow-dark: rgba(157, 172, 186, 0.55);
+  --nm-shadow-light: rgba(255, 255, 255, 0.95);
+  --nm-raised:
+    6px 6px 14px rgba(157, 172, 186, calc(0.5 * var(--nm-depth))),
+    -6px -6px 14px rgba(255, 255, 255, calc(0.9 * var(--nm-depth)));
+  --nm-raised-sm:
+    3px 3px 8px rgba(157, 172, 186, calc(0.45 * var(--nm-depth))),
+    -3px -3px 8px rgba(255, 255, 255, calc(0.9 * var(--nm-depth)));
+  --nm-inset:
+    inset 3px 3px 7px rgba(157, 172, 186, calc(0.45 * var(--nm-depth))),
+    inset -3px -3px 7px rgba(255, 255, 255, calc(0.85 * var(--nm-depth)));
+  --nm-inset-sm:
+    inset 2px 2px 4px rgba(157, 172, 186, calc(0.4 * var(--nm-depth))),
+    inset -2px -2px 4px rgba(255, 255, 255, calc(0.8 * var(--nm-depth)));
+  --nm-floating: 0 22px 48px rgba(29, 40, 51, 0.18), 0 2px 8px rgba(29, 40, 51, 0.08);
+
+  /* geometry */
+  --nm-radius-lg: 20px;
+  --nm-radius: 14px;
+  --nm-radius-sm: 10px;
+  --nm-radius-pill: 999px;
+
+  /* spacing scale */
+  --nm-space-1: 4px;
+  --nm-space-2: 8px;
+  --nm-space-3: 12px;
+  --nm-space-4: 16px;
+  --nm-space-5: 24px;
+  --nm-space-6: 32px;
+
+  /* typography */
+  --nm-font: 'Segoe UI Variable Text', 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', sans-serif;
+  --nm-font-heading: 'Segoe UI Variable Display', 'Segoe UI', system-ui, sans-serif;
+  --nm-text-scale: 1;
+  --nm-base-size: calc(15.5px * var(--nm-text-scale));
+  --nm-small-size: calc(13px * var(--nm-text-scale));
+  --nm-tiny-size: calc(11.5px * var(--nm-text-scale));
+  --nm-title-size: calc(17px * var(--nm-text-scale));
+  --nm-heading-size: calc(21px * var(--nm-text-scale));
+
+  /* layout metrics (updated from settings) */
+  --nm-topbar-height: 64px;
+  --nm-sidebar-width: 248px;
+  --nm-list-width: 380px;
+  --nm-row-height: 84px;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --nm-accent: #5fa5b5;
+  --nm-accent-strong: #7fbdcc;
+  --nm-accent-soft: rgba(95, 165, 181, 0.18);
+  --nm-accent-contrast: #0f151b;
+
+  --nm-bg: #161d24;
+  --nm-bg-alt: #131a20;
+  --nm-surface: #1c242c;
+  --nm-surface-raised: #212b34;
+  --nm-surface-sunken: #182027;
+  --nm-header: #1a222a;
+
+  --nm-text: #e7eef4;
+  --nm-text-secondary: #c2ced8;
+  --nm-text-muted: #a2b1bd;
+  --nm-text-inverse: #131a20;
+
+  --nm-border: #2c3843;
+  --nm-border-strong: #3a4854;
+  --nm-focus: #8ad0e0;
+
+  --nm-danger: #e17a7a;
+  --nm-danger-soft: rgba(225, 122, 122, 0.16);
+  --nm-warning: #e0b067;
+  --nm-warning-soft: rgba(224, 176, 103, 0.16);
+  --nm-success: #7fc9a3;
+  --nm-success-soft: rgba(127, 201, 163, 0.16);
+  --nm-info-soft: rgba(95, 165, 181, 0.16);
+
+  --nm-shadow-dark: rgba(0, 0, 0, 0.55);
+  --nm-shadow-light: rgba(255, 255, 255, 0.045);
+  --nm-raised:
+    6px 6px 16px rgba(0, 0, 0, calc(0.5 * var(--nm-depth))),
+    -6px -6px 16px rgba(255, 255, 255, calc(0.04 * var(--nm-depth)));
+  --nm-raised-sm:
+    3px 3px 9px rgba(0, 0, 0, calc(0.45 * var(--nm-depth))),
+    -3px -3px 9px rgba(255, 255, 255, calc(0.035 * var(--nm-depth)));
+  --nm-inset:
+    inset 3px 3px 7px rgba(0, 0, 0, calc(0.45 * var(--nm-depth))),
+    inset -3px -3px 7px rgba(255, 255, 255, calc(0.04 * var(--nm-depth)));
+  --nm-inset-sm:
+    inset 2px 2px 4px rgba(0, 0, 0, calc(0.4 * var(--nm-depth))),
+    inset -2px -2px 4px rgba(255, 255, 255, calc(0.03 * var(--nm-depth)));
+  --nm-floating: 0 24px 52px rgba(0, 0, 0, 0.55), 0 2px 10px rgba(0, 0, 0, 0.4);
+}
+
+/* appearance intensity: flat removes depth entirely */
+:root[data-depth='flat'] {
+  --nm-depth: 0;
+  --nm-shadow-light: transparent;
+  --nm-shadow-dark: transparent;
+}
+
+:root[data-depth='subtle'] {
+  --nm-depth: 0.65;
+}
+
+:root[data-depth='premium'] {
+  --nm-depth: 1.25;
+}
+
+:root[data-density='compact'] {
+  --nm-row-height: 64px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

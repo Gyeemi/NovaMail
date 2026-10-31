@@ -1,0 +1,35 @@
+Novamail - Proprietary Software License
+Copyright (c) 2026 Baraily Inovex. All rights reserved.
+
+1. GRANT
+   Baraily Inovex grants you a non-exclusive, non-transferable licence to
+   install and use Novamail on computers that you own or control, for your
+   personal or internal business use.
+
+2. RESTRICTIONS
+   You may not redistribute, sublicense, rent, lease or sell copies of
+   Novamail, nor modify, reverse engineer, decompile or disassemble it, except
+   to the extent that such restriction is prohibited by applicable law.
+
+3. YOUR DATA
+   Novamail stores all mail, settings and account data on your own computer.
+   Baraily Inovex does not receive, collect, host or have access to that data.
+   See docs/PRIVACY.md for the complete description.
+
+4. THIRD-PARTY COMPONENTS
+   Novamail includes open-source components listed in DEPENDENCIES.md. Each is
+   governed by its own licence, and those licences prevail over this one for
+   the relevant component.
+
+5. NO WARRANTY
+   NOVAMAIL IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+
+6. LIMITATION OF LIABILITY
+   IN NO EVENT SHALL BARAILY INOVEX BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+   FROM, OUT OF OR IN CONNECTION WITH NOVAMAIL OR THE USE OR OTHER DEALINGS IN
+   NOVAMAIL. ALWAYS KEEP YOUR OWN BACKUPS OF IMPORTANT MAIL.
+
+Contact: support@barailyinovex.example

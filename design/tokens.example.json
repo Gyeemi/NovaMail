@@ -1,0 +1,30 @@
+{
+  "light": {
+    "color": {
+      "accent": { "$value": "#3f7d8c", "$type": "color" },
+      "accentStrong": { "$value": "#2f6f7e", "$type": "color" },
+      "bg": { "$value": "#eef2f6", "$type": "color" },
+      "surface": { "$value": "#f4f7fa", "$type": "color" },
+      "text": {
+        "base": { "$value": "#1d2833", "$type": "color" },
+        "secondary": { "$value": "#4a5a68", "$type": "color" },
+        "muted": { "$value": "#5f6f7d", "$type": "color" }
+      },
+      "border": { "$value": "#d7e0e8", "$type": "color" }
+    },
+    "radius": {
+      "lg": { "$value": "20px", "$type": "dimension" },
+      "base": { "$value": "14px", "$type": "dimension" },
+      "sm": { "$value": "10px", "$type": "dimension" }
+    }
+  },
+  "dark": {
+    "color": {
+      "accent": { "$value": "#63a3b1" },
+      "bg": { "$value": "#161b21" },
+      "surface": { "$value": "#1d242c" },
+      "text": { "base": { "$value": "#e7edf3" } },
+      "border": { "$value": "#2c3641" }
+    }
+  }
+}
