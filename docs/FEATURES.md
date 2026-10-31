@@ -187,7 +187,8 @@ service, so adding CalDAV/CardDAV later does not touch mail code.
 | Windows notifications | Implemented | Toast on new mail, respects the settings toggle |
 | Launch at startup | Implemented | `app.setLoginItemSettings` |
 | Code signing | **Not available** | No certificate. SmartScreen will warn; documented in `SECURITY.md` |
-| Auto-update | **Planned** | Deliberately not shipped: an unsigned app must not self-update. Manual installer download only |
+| Update check | Implemented | Queries this repository's **published** GitHub releases (drafts and pre-releases ignored), reports the newest version and links the installer. `NOVAMAIL_RELEASES_REPO` or a custom `updateFeedUrl` (HTTPS JSON `{version, notes, url}`) overrides the source. Verified live against `api.github.com` in `tests/unit/updates.test.ts` |
+| Auto-update (silent install) | **Not shipped** | Deliberately: an unsigned app must not replace its own binary. The user downloads and runs the installer |
 | Portable settings path | Implemented | `NOVAMAIL_DATA_DIR` environment variable |
 
 ## Security

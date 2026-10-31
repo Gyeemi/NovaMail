@@ -199,6 +199,12 @@ Consequences you should be aware of:
 - Novamail therefore ships **no auto-updater**. Downloading and running a new
   installer is always an explicit decision by you, so an unsigned binary cannot
   be delivered silently by an attacker who compromises an update feed.
+- The update *check* is read-only and low-risk: it fetches
+  `api.github.com/repos/<owner>/<repo>/releases`, ignores drafts and
+  pre-releases, compares version numbers, and shows a link. It never downloads or
+  executes anything, refuses non-HTTPS feeds, and a compromised feed could at
+  worst show a false "update available" message that still ends at a download the
+  user must approve. Set `NOVAMAIL_RELEASES_REPO` to point it at your own fork.
 
 If you distribute Novamail inside an organisation, sign it with an
 Extended Validation or organisation certificate before rollout; electron-builder

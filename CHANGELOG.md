@@ -5,6 +5,37 @@ built from them.
 
 ---
 
+## 1.0.4 — the update check now actually checks
+
+### Fixed
+
+- **"Check for updates" always answered "No update feed is configured for this
+  build."** The build shipped with `updateFeedUrl: null`, no screen to set it and
+  no default source, so the button could never do anything. The check now reads
+  this repository's **published** GitHub releases by default: it finds the newest
+  version, ignores drafts and pre-releases, and offers the installer `.exe`
+  directly (falling back to the release page).
+- Messages now distinguish "you are up to date", "no published release exists
+  yet", "GitHub could not be reached" and "no source configured" instead of one
+  catch-all sentence.
+- About page: an update shows a **Download Novamail x.y.z** button and the release
+  notes, so the result is actionable.
+
+### Added
+
+- `NOVAMAIL_RELEASES_REPO=owner/name` to point a fork or private deployment at
+  its own release pipeline; `updateFeedUrl` (HTTPS JSON `{version, notes, url}`)
+  still overrides everything for publishers who do not use GitHub.
+- 14 update-check tests, including a **live** call to `api.github.com` that is
+  skipped automatically when the network is unavailable.
+
+### Not changed
+
+Novamail still does not self-update: the check only tells you and links the
+installer you then run yourself (documented in `SECURITY.md`).
+
+---
+
 ## 1.0.3 — account management and OAuth sign-in
 
 ### Fixed

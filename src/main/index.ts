@@ -37,7 +37,7 @@ import { FallbackBackend } from './services/credentials'
 import type { SecretBackend } from './services/credentials'
 
 const __dirname_ = path.dirname(fileURLToPath(import.meta.url))
-const APP_VERSION = '1.0.3'
+const APP_VERSION = '1.0.4'
 const ATTACHMENT_SCHEME = 'novamail-att'
 
 protocol.registerSchemesAsPrivileged([

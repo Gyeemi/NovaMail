@@ -116,9 +116,28 @@ export function AboutView(): ReactNode {
             </div>
             {checking ? <Spinner label="Contacting the release feed" /> : null}
             {update ? (
-              <Banner tone={update.updateAvailable ? 'info' : 'info'} icon={update.verified ? 'shield' : 'info'}>
-                {update.message}
-              </Banner>
+              <>
+                <Banner tone={update.updateAvailable ? 'warning' : 'info'} icon={update.verified ? 'shield' : 'info'}>
+                  {update.message}
+                </Banner>
+                {update.updateAvailable && update.downloadUrl ? (
+                  <div className="row" style={{ marginTop: 8 }}>
+                    <Button
+                      variant="primary"
+                      icon="download"
+                      onClick={() => void api.app.openExternal(update.downloadUrl!)}
+                    >
+                      Download Novamail {update.latestVersion}
+                    </Button>
+                  </div>
+                ) : null}
+                {update.updateAvailable && update.releaseNotes ? (
+                  <details className="small muted" style={{ marginTop: 8 }}>
+                    <summary>What changed in {update.latestVersion}</summary>
+                    <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit' }}>{update.releaseNotes}</pre>
+                  </details>
+                ) : null}
+              </>
             ) : null}
           </div>
 

@@ -15,6 +15,7 @@ import { createLogger } from '../util/logger'
 import { databaseSize } from '../services/db/database'
 import { attachmentUrl } from '../services/attachments/preview'
 import { UpdateService } from '../services/updates'
+import { releaseRepoFromEnv } from '@shared/release'
 import { safeFilename } from '@shared/attachments'
 import { MIME_BY_EXTENSION } from '../util/mime'
 import {
@@ -106,7 +107,10 @@ export function registerIpcHandlers(options: IpcOptions): void {
     const settings = context.settings.get()
     return new UpdateService({
       currentVersion: appInfo().version,
-      feedUrl: settings.updateFeedUrl
+      feedUrl: settings.updateFeedUrl,
+      // Publishes no feed of its own, so the project's GitHub releases are the
+      // default source; NOVAMAIL_RELEASES_REPO points a fork elsewhere.
+      githubRepo: releaseRepoFromEnv(process.env)
     }).check()
   })
 
