@@ -1,6 +1,6 @@
 # Feature completion report
 
-Status of every feature in Novamail 1.0.0, as of this commit. This is a status
+Status of every feature in Novamail, as of 1.0.3. This is a status
 report, not marketing: anything not proven by a test or by running the built app
 is marked **partial** or **planned**, and the reason is stated.
 
@@ -34,13 +34,58 @@ gap, and it must be done before Novamail is handed to anyone.
 
 ---
 
+## OAuth sign-in: what is verified, and what is not
+
+**Verified by automated tests** (`tests/unit/oauth-flow.test.ts`, run with
+`npx vitest run`):
+
+- the authorisation URL is the provider's official endpoint
+  (`accounts.google.com`, `login.microsoftonline.com/<tenant>`) with PKCE S256, a
+  random `state`, `access_type=offline` and the mail scopes;
+- the redirect URI is `http://127.0.0.1:<port>/oauth/callback` for Google and
+  `http://localhost:<port>` for Microsoft, served by a listener that binds to
+  loopback only and closes when the flow ends;
+- a callback with the wrong `state` is rejected; a provider `error=access_denied`
+  is reported as a cancellation; `invalid_grant` is reported as "expired or was
+  revoked"; a token response carrying `error` is never accepted as success;
+- `cancelOAuth` interrupts a waiting flow and leaves no listener or unhandled
+  rejection behind;
+- the client ID is persisted with 0600 permissions and only a masked form is sent
+  to the renderer.
+
+**Not verified in this build environment:** a live sign-in to Google or
+Microsoft. That needs a registered client ID, an interactive browser and an
+account, none of which exist in the sandbox — so no claim is made that a real
+consent screen was completed. What is exercised is the full protocol against a
+stubbed provider, plus the account-management logic and UI around it. Register a
+client ID as described in `ACCOUNT-SETUP.md` and the same code path runs against
+the real endpoints.
+
+**Limitations**
+
+- A client ID must be registered per installation; Novamail does not ship one.
+  Organisations that want it pre-configured can set `NOVAMAIL_GOOGLE_CLIENT_ID` /
+  `NOVAMAIL_MICROSOFT_CLIENT_ID` in the environment, which take precedence over
+  the file.
+- Google shows "Google hasn't verified this app" until the OAuth consent screen is
+  published and verified; that is a Google review status, not a Novamail bug.
+- Microsoft tenants that block IMAP (`IMAP.AccessAsUser.All`) cannot sync mail
+  even after a successful sign-in; the error message says so.
+- Revoking access at Google is best-effort (`oauth2.googleapis.com/revoke`); if
+  the request fails, the local tokens are still deleted and the account shows
+  **Sign in needed**. Microsoft has no equivalent public revocation endpoint for
+  desktop clients, so only local tokens are removed there.
+
+---
+
 ## Mail core
 
 | Feature | Status | Notes |
 |---|---|---|
 | Multi-account IMAP | Implemented | `imapflow`, one connection per account, IDLE where supported |
 | SMTP send | Implemented | `nodemailer`, TLS 1.2+, single compiled MIME message per send |
-| OAuth 2.0 + PKCE (Gmail, M365, Outlook.com) | Implemented | System browser, loopback redirect, `state` verified |
+| OAuth 2.0 + PKCE (Gmail, M365, Outlook.com) | Implemented | System browser only (`shell.openExternal`), loopback redirect on `127.0.0.1`, `state` + PKCE S256 verified, cancellable, reconnect per account |
+| OAuth client registration in the app | Implemented | Settings → Accounts → Sign-in providers; client ID in `oauth.json` (0600), tokens only in DPAPI |
 | App passwords (iCloud, Yahoo, generic) | Implemented | Stored encrypted via `safeStorage`/DPAPI |
 | Autoconfiguration | Implemented | Provider table + domain heuristics; always shown for review |
 | Unified inbox | Implemented | Merged by date, de-duplicated by Message-ID |

@@ -20,7 +20,21 @@ const API_SURFACE: Record<string, string[]> = {
     'reload'
   ],
   settings: ['get', 'update', 'reset', 'chooseDownloadFolder'],
-  accounts: ['list', 'test', 'autoconfigure', 'create', 'update', 'remove', 'setDefault', 'startOAuth', 'revokeOAuth'],
+    accounts: [
+    'list',
+    'test',
+    'autoconfigure',
+    'create',
+    'update',
+    'remove',
+    'setDefault',
+    'startOAuth',
+    'revokeOAuth',
+    'reconnect',
+    'cancelOAuth',
+    'oauthStatus',
+    'setOAuthClient'
+  ],
   folders: ['list', 'create', 'rename', 'remove'],
   messages: [
     'list',

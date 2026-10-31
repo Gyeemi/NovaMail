@@ -53,8 +53,20 @@ export type DeepPartial<T> = {
 export interface OAuthStartResult {
   ok: boolean
   account?: Account
+  /** id of the account that was created or re-authorised */
+  accountId?: Id
   error?: string
+  /** true when the user closed the browser or pressed Cancel - not an error */
   cancelled?: boolean
+}
+
+/** What the accounts screen knows about a provider's OAuth registration. */
+export interface OAuthProviderStatus {
+  provider: 'google' | 'microsoft'
+  configured: boolean
+  /** last six characters only, enough to tell two registrations apart */
+  clientId: string | null
+  tenant: string | null
 }
 
 export interface AutoconfigResult {
@@ -110,6 +122,16 @@ export interface NovaMailApi {
     setDefault(id: Id): Promise<void>
     startOAuth(args: { provider: 'google' | 'microsoft'; loginHint?: string }): Promise<OAuthStartResult>
     revokeOAuth(accountId: Id): Promise<void>
+    /** Re-authorise an existing OAuth account, selected by id. */
+    reconnect(accountId: Id): Promise<OAuthStartResult>
+    /** Abort a flow that is waiting for the browser. */
+    cancelOAuth(): Promise<void>
+    oauthStatus(): Promise<OAuthProviderStatus[]>
+    setOAuthClient(args: {
+      provider: 'google' | 'microsoft'
+      clientId: string
+      tenant?: string
+    }): Promise<OAuthProviderStatus[]>
   }
   folders: {
     list(accountId?: Id): Promise<Folder[]>
@@ -243,7 +265,8 @@ export interface NovaMailEvents {
   toast: ToastMessage
   navigate: { view: string; payload?: Record<string, unknown> }
   'compose:open': ComposePayload
-  'oauth:result': { ok: boolean; error?: string }
+  'oauth:result': { ok: boolean; accountId?: Id; error?: string }
+  'accounts:changed': { accountId?: Id }
   'update:available': UpdateCheckResult
   'app:before-quit': void
 }

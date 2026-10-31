@@ -16,12 +16,34 @@
  */
 import fs from 'node:fs'
 import http from 'node:http'
+import path from 'node:path'
 import type { AddressInfo } from 'node:net'
 import type { OAuthTokens } from '../credentials'
 import { createLogger } from '../../util/logger'
 import { createPkce, createState, decodeIdToken } from './pkce'
 
 const log = createLogger('oauth')
+
+/** Thrown when the user cancels from the app, so callers can stay quiet about it. */
+export class OAuthCancelledError extends Error {
+  readonly cancelled = true
+  constructor(message = 'Sign-in was cancelled.') {
+    super(message)
+    this.name = 'OAuthCancelledError'
+  }
+}
+
+/** Thrown when a provider is not configured yet (no client id registered). */
+export class OAuthNotConfiguredError extends Error {
+  constructor(public readonly provider: OAuthProviderId) {
+    super(
+      provider === 'google'
+        ? 'Google sign-in is not configured yet. Add a Google OAuth client ID in Settings > Accounts.'
+        : 'Microsoft sign-in is not configured yet. Add a Microsoft application (client) ID in Settings > Accounts.'
+    )
+    this.name = 'OAuthNotConfiguredError'
+  }
+}
 
 export type OAuthProviderId = 'google' | 'microsoft'
 
@@ -119,6 +141,8 @@ export function redirectUriFor(provider: OAuthProviderId, port: number): string 
 export class OAuthService {
   private readonly fetchImpl: typeof fetch
   private readonly timeoutMs: number
+  /** Set while a flow is waiting for the browser redirect. */
+  private pendingReject: ((error: Error) => void) | null = null
 
   constructor(private readonly options: OAuthServiceOptions) {
     this.fetchImpl = options.fetchImpl ?? fetch
@@ -160,14 +184,85 @@ export class OAuthService {
 
   private clientFor(provider: OAuthProviderId): OAuthClientConfig {
     const config = this.readConfig()[provider]
-    if (!config?.clientId) {
-      throw new Error(
-        provider === 'google'
-          ? 'Google sign-in is not configured. Add a Google OAuth client ID in Settings > Accounts (see docs/ACCOUNT-SETUP.md).'
-          : 'Microsoft sign-in is not configured. Add a Microsoft application (client) ID in Settings > Accounts (see docs/ACCOUNT-SETUP.md).'
-      )
-    }
+    if (!config?.clientId) throw new OAuthNotConfiguredError(provider)
     return config
+  }
+
+  /**
+   * Saves a client registration so the sign-in flow can run without editing
+   * files by hand. Only the public client id and tenant are stored here; a
+   * client secret (only needed for confidential clients) stays in the
+   * environment so it is never written into the user's profile directory.
+   */
+  saveClient(provider: OAuthProviderId, input: { clientId: string; tenant?: string }): OAuthClientConfig {
+    const clientId = input.clientId.trim()
+    if (!/^[A-Za-z0-9._-]{8,200}$/.test(clientId)) {
+      throw new Error('That client ID does not look right. Paste the application (client) ID from the provider portal.')
+    }
+    const existing = this.readConfigFile()
+    const next: OAuthFileConfig = { ...existing }
+    const previous = next[provider]
+    next[provider] = {
+      ...previous,
+      clientId,
+      ...(provider === 'microsoft' ? { tenant: (input.tenant ?? previous?.tenant ?? 'common').trim() || 'common' } : {})
+    }
+    this.writeConfigFile(next)
+    log.info('oauth client saved', { provider })
+    return next[provider]!
+  }
+
+  private readConfigFile(): OAuthFileConfig {
+    try {
+      if (!fs.existsSync(this.options.configFile)) return {}
+      const parsed = JSON.parse(fs.readFileSync(this.options.configFile, 'utf8')) as OAuthFileConfig
+      return parsed && typeof parsed === 'object' ? parsed : {}
+    } catch (error) {
+      log.error('oauth.json could not be read', { error })
+      return {}
+    }
+  }
+
+  private writeConfigFile(config: OAuthFileConfig): void {
+    fs.mkdirSync(path.dirname(this.options.configFile), { recursive: true })
+    // 0600: the file holds a public client id, but it is still per-user config.
+    fs.writeFileSync(this.options.configFile, `${JSON.stringify(config, null, 2)}\n`, { mode: 0o600 })
+  }
+
+  /**
+   * Never returns a full client id to the renderer. Enough of the value is shown
+   * to tell two registrations apart (a Google id by its project number, a
+   * Microsoft id by its last characters) without moving the whole value around.
+   */
+  private static maskClientId(clientId: string): string {
+    const googleStyle = /^(\d{6,})-[A-Za-z0-9_-]+/.exec(clientId)
+    if (googleStyle) return `${googleStyle[1]}-...`
+    return `...${clientId.slice(-6)}`
+  }
+
+  /** Describes what the UI needs to know about each provider. */
+  status(): { provider: OAuthProviderId; configured: boolean; clientId: string | null; tenant: string | null }[] {
+    const config = this.readConfig()
+    return (['google', 'microsoft'] as OAuthProviderId[]).map((provider) => ({
+      provider,
+      configured: Boolean(config[provider]?.clientId),
+      clientId: config[provider]?.clientId ? OAuthService.maskClientId(config[provider]!.clientId) : null,
+      tenant: config[provider]?.tenant ?? (provider === 'microsoft' ? 'common' : null)
+    }))
+  }
+
+  /** True while a flow is waiting for the browser callback. */
+  isSigningIn(): boolean {
+    return this.pendingReject !== null
+  }
+
+  /** Cancels the flow that is currently waiting for the browser. */
+  cancelSignIn(): boolean {
+    const reject = this.pendingReject
+    if (!reject) return false
+    this.pendingReject = null
+    reject(new OAuthCancelledError())
+    return true
   }
 
   /** Runs the full interactive flow and returns fresh tokens plus the account profile. */
@@ -190,12 +285,17 @@ export class OAuthService {
     log.info('starting oauth flow', { provider, redirectUri, port })
 
     const codePromise = this.waitForCode(server, state)
+    // Recover the rejection so cancelling or timing out cannot surface as an
+    // unhandled rejection in the main process.
+    codePromise.catch(() => undefined)
+
     await this.options.openExternal(authUrl)
 
     let code: string
     try {
       code = await codePromise
     } finally {
+      this.pendingReject = null
       this.stopServer(server)
     }
 
@@ -261,7 +361,9 @@ export class OAuthService {
     } catch {
       /* fall through */
     }
-    if (!response.ok) {
+    // Providers normally use a 4xx for a rejected grant, but treat an error body
+    // as a failure regardless so a 200 with `error` cannot look like success.
+    if (!response.ok || (json.error && !json.access_token)) {
       const errorCode = String(json.error ?? response.status)
       const description = String(json.error_description ?? json.error ?? text.slice(0, 200))
       log.error('token endpoint rejected the request', { provider, status: response.status, errorCode })
@@ -387,7 +489,14 @@ export class OAuthService {
         clearTimeout(timer)
         server.off('request', handler)
         server.off('error', onError)
+        if (this.pendingReject === onCancel) this.pendingReject = null
       }
+      // Lets the app cancel a flow the user abandoned in the browser.
+      const onCancel = (error: Error): void => {
+        cleanup()
+        reject(error)
+      }
+      this.pendingReject = onCancel
       const onError = (error: Error): void => {
         cleanup()
         reject(error)

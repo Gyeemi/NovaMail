@@ -13,6 +13,81 @@ account**.
 
 ---
 
+## Registering the Google / Microsoft app (one-time, per computer)
+
+Google and Microsoft will only sign a desktop app in if that app is registered
+with them first, because the sign-in page has to know which application is
+asking. Novamail ships **without** baked-in credentials on purpose — a client ID
+committed to a public repository can be abused by anyone. You register two
+public client IDs once and paste them into the app.
+
+Both sign-in kinds are *public clients* that use PKCE and a **loopback redirect**
+(`http://127.0.0.1:<random port>…`). No client secret is required, and none is
+ever stored by Novamail; if you do set `NOVAMAIL_GOOGLE_CLIENT_SECRET` /
+`NOVAMAIL_MICROSOFT_CLIENT_SECRET` in the environment it is only used from
+memory.
+
+### Google (Gmail, Google Workspace)
+
+1. Open <https://console.cloud.google.com/> and create (or pick) a project.
+2. **APIs & Services → Library**: enable **Gmail API**.
+3. **APIs & Services → OAuth consent screen**: choose *External*, fill in the app
+   name `Novamail`, your support email, and add yourself under **Test users**
+   (or publish the app later). Scopes: `openid`, `email`, `profile`,
+   `https://mail.google.com/`.
+4. **Credentials → Create credentials → OAuth client ID → Desktop app**. Google
+   creates the loopback redirect for you; Novamail's exact address is
+   `http://127.0.0.1:<port>/oauth/callback` (`<port>` is picked at sign-in time,
+   which the *Desktop app* type permits).
+5. Copy the **client ID** (it ends in `.apps.googleusercontent.com`).
+6. In Novamail: **Settings → Accounts → Sign-in providers (OAuth) → Google →
+   Set up**, paste the ID, **Save client ID**. The chip changes to **Ready**.
+
+### Microsoft (Outlook.com, Microsoft 365)
+
+1. Open <https://entra.microsoft.com/> → **App registrations → New registration**.
+2. Name it `Novamail`, supported account types *Accounts in any organizational
+   directory and personal Microsoft accounts*.
+3. **Authentication → Add a platform → Mobile and desktop applications**, and add
+   the redirect `http://localhost` (Microsoft ignores the port for native apps).
+4. **API permissions → Add a permission → APIs my organization uses → Office 365
+   Exchange**: delegated `IMAP.AccessAsUser.All` and `SMTP.Send`; also
+   `openid`, `email`, `profile`, `offline_access`. Grant admin consent if your
+   tenant requires it.
+5. Copy the **Application (client) ID** from the overview.
+6. In Novamail: **Settings → Accounts → Sign-in providers (OAuth) → Microsoft →
+   Set up**, paste the ID and the tenant (`common` for personal + work, or your
+   directory ID / `contoso.onmicrosoft.com`), then **Save client ID**.
+
+### Where this is stored
+
+`%APPDATA%\Novamail\oauth.json`, permissions restricted to your Windows user.
+It holds only the application (client) ID and tenant — both public values. Access
+and refresh tokens never go there; they live in the Windows credential store
+(DPAPI) via the encrypted secret store.
+
+---
+
+## Signing in again, reconnecting and revoking access
+
+These live in **Settings → Accounts**, on each account's row:
+
+| Action | What it does |
+| --- | --- |
+| **Reconnect** / **Sign in again with Google (or Microsoft)** | Re-opens the provider's page in your default browser for *that* account. If you sign in as a different mailbox the attempt is refused rather than renaming the account. |
+| **Cancel** (shown while waiting) | Stops waiting for the browser and leaves the account untouched. |
+| **Revoke access** | Asks the provider to invalidate the refresh token, deletes the tokens from this computer, and marks the account **Sign in needed** until you reconnect. |
+| **Test connection** | Opens IMAP and SMTP once with the current credentials and reports the result. |
+
+If the account shows **Sign in needed**, the stored token expired or was revoked.
+Novamail does not retry in a loop: it stops and waits for you to reconnect. Your
+messages already downloaded stay readable.
+
+Expired access tokens are refreshed silently while the refresh token is valid;
+only a rejected refresh (`invalid_grant`) asks you to sign in again.
+
+---
+
 ## Gmail / Google Workspace
 
 Gmail requires OAuth 2.0. An app password also works if your account has 2-step

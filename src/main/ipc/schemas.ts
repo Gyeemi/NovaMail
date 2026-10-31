@@ -228,3 +228,11 @@ export function isSafeExternalUrl(raw: string): boolean {
     return false
   }
 }
+
+/** OAuth client ids are public identifiers, but still validated and length-capped. */
+export const oauthClientIdSchema = z
+  .string()
+  .trim()
+  .min(8, 'That client ID is too short.')
+  .max(200, 'That client ID is too long.')
+  .regex(/^[A-Za-z0-9._-]+$/, 'A client ID contains only letters, digits, dots, dashes and underscores.')

@@ -98,6 +98,14 @@ export function SetupWizard(): ReactNode {
         loginHint: email.trim() || undefined
       })
       if (!result.ok) {
+        if (result.cancelled) {
+          actions.pushToast({
+            tone: 'info',
+            title: 'Sign-in cancelled',
+            description: 'No account was added. You can start again whenever you are ready.'
+          })
+          return
+        }
         setError(result.error ?? 'The sign-in did not complete.')
         return
       }
@@ -306,11 +314,23 @@ export function SetupWizard(): ReactNode {
                     onChange={(event) => setDisplayName(event.target.value)}
                   />
                 </Field>
-                <Button variant="primary" icon="external" onClick={() => void startOAuth()} disabled={busy === 'oauth'}>
-                  {busy === 'oauth'
-                    ? 'Waiting for the browser…'
-                    : `Sign in with ${provider.oauthProvider === 'google' ? 'Google' : 'Microsoft'}`}
-                </Button>
+                <div className="row" style={{ gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <Button variant="primary" icon="external" onClick={() => void startOAuth()} disabled={busy === 'oauth'}>
+                    {busy === 'oauth'
+                      ? 'Waiting for the browser…'
+                      : `Sign in with ${provider.oauthProvider === 'google' ? 'Google' : 'Microsoft'}`}
+                  </Button>
+                  {busy === 'oauth' ? (
+                    <Button
+                      icon="close"
+                      onClick={async () => {
+                        await api.accounts.cancelOAuth().catch(() => undefined)
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                  ) : null}
+                </div>
                 <details className="small muted">
                   <summary>Use an app password instead (advanced)</summary>
                   <p style={{ lineHeight: 1.6 }}>

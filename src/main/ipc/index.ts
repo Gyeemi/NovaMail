@@ -35,7 +35,8 @@ import {
   signatureSchema,
   snoozeArgsSchema,
   taskSchema,
-  urlSchema
+  urlSchema,
+  oauthClientIdSchema
 } from './schemas'
 
 const log = createLogger('ipc')
@@ -228,6 +229,29 @@ export function registerIpcHandlers(options: IpcOptions): void {
 
   register('accounts', 'revokeOAuth', async (accountId) => {
     await context.accountService.revokeOAuth(idSchema.parse(accountId))
+  })
+
+  register('accounts', 'reconnect', async (accountId) => {
+    const id = idSchema.parse(accountId)
+    const result = await context.accountService.reconnect(id)
+    if (result.ok) {
+      // Kick off a sync so the refreshed account proves itself immediately.
+      void context.sync.syncAccount?.(id).catch(() => undefined)
+    }
+    return result
+  })
+
+  register('accounts', 'cancelOAuth', async () => {
+    context.accountService.cancelOAuth()
+  })
+
+  register('accounts', 'oauthStatus', async () => context.accountService.oauthStatus())
+
+  register('accounts', 'setOAuthClient', async (args) => {
+    const provider = args?.provider === 'microsoft' ? 'microsoft' : 'google'
+    const clientId = oauthClientIdSchema.parse(args?.clientId)
+    const tenant = typeof args?.tenant === 'string' ? args.tenant.slice(0, 120) : undefined
+    return context.accountService.saveOAuthClient(provider, clientId, tenant)
   })
 
   /* --------------------------------------------------------------- folders */

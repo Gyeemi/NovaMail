@@ -13,7 +13,7 @@ import type {
   ProviderCapabilities,
   ProviderId
 } from '@shared/types'
-import type { AutoconfigResult, OAuthStartResult } from '@shared/ipc'
+import type { AutoconfigResult, OAuthProviderStatus, OAuthStartResult } from '@shared/ipc'
 import type { AccountsRepository, CreateAccountRecord } from '../db/repositories/accounts'
 import type { FoldersRepository } from '../db/repositories/folders'
 import type { CredentialStore } from '../credentials'
@@ -224,26 +224,87 @@ export class AccountService {
    * only after the provider returned a valid profile, so a failed attempt leaves
    * no half-configured account behind.
    */
-  async startOAuth(provider: 'google' | 'microsoft', loginHint?: string): Promise<OAuthStartResult> {
+  /** Provider configuration state for the accounts screen. */
+  oauthStatus(): OAuthProviderStatus[] {
+    return this.deps.oauth.status()
+  }
+
+  saveOAuthClient(provider: 'google' | 'microsoft', clientId: string, tenant?: string): OAuthProviderStatus[] {
+    this.deps.oauth.saveClient(provider, { clientId, tenant })
+    return this.oauthStatus()
+  }
+
+  cancelOAuth(): boolean {
+    return this.deps.oauth.cancelSignIn()
+  }
+
+  /**
+   * Re-authorises an existing account. The account is chosen first, so the
+   * provider page can be used to pick which mailbox to sign into, but a
+   * different address is never silently written over the account the user
+   * asked to manage - that would relabel one mailbox as another.
+   */
+  async reconnect(accountId: string): Promise<OAuthStartResult> {
+    const account = this.deps.accounts.get(accountId)
+    if (!account) return { ok: false, error: 'That account no longer exists.' }
+    if (account.authType !== 'oauth2' || !account.oauthProvider) {
+      return {
+        ok: false,
+        error: `${account.email} uses an app password, not OAuth. Use "Change password" in Settings > Accounts to update it.`
+      }
+    }
+    return this.startOAuth(account.oauthProvider, account.email, accountId)
+  }
+
+  async startOAuth(
+    provider: 'google' | 'microsoft',
+    loginHint?: string,
+    targetAccountId?: string
+  ): Promise<OAuthStartResult> {
     if (!this.deps.oauth.isConfigured(provider)) {
       return {
         ok: false,
         error:
           provider === 'google'
-            ? 'Google sign-in is not configured yet. Open Settings > Accounts and add a Google OAuth client ID (see docs/ACCOUNT-SETUP.md).'
-            : 'Microsoft sign-in is not configured yet. Open Settings > Accounts and add a Microsoft application (client) ID (see docs/ACCOUNT-SETUP.md).'
+            ? 'Google sign-in is not configured yet. Add a Google OAuth client ID under Settings > Accounts > Sign-in providers.'
+            : 'Microsoft sign-in is not configured yet. Add a Microsoft application (client) ID under Settings > Accounts > Sign-in providers.'
       }
     }
     try {
       const result = await this.deps.oauth.signIn(provider, loginHint)
       const providerId: ProviderId = provider === 'google' ? 'gmail' : 'microsoft365'
       const existing = this.deps.accounts.findByEmail(result.profile.email)
+
+      // Re-authorising a specific account: the provider page may let the user
+      // pick any mailbox, so only accept the address the account already is.
+      if (targetAccountId) {
+        const target = this.deps.accounts.get(targetAccountId)
+        if (!target) return { ok: false, error: 'That account no longer exists.' }
+        if (target.email.toLowerCase() !== result.profile.email.toLowerCase()) {
+          const other = this.deps.accounts.findByEmail(result.profile.email)
+          return {
+            ok: false,
+            error: other
+              ? `You signed in as ${result.profile.email}, which is already a separate account in Novamail. Choose Reconnect on that account instead, or sign in as ${target.email}.`
+              : `You signed in as ${result.profile.email}, but this account is ${target.email}. Sign in with ${target.email}, or add ${result.profile.email} as a new account.`
+          }
+        }
+        this.deps.credentials.patch(target.id, { tokens: result.tokens })
+        this.deps.accounts.setOAuthProvider(target.id, provider)
+        this.deps.accounts.setSyncState(target.id, 'idle', null)
+        appEvents.emit('oauth:result', { ok: true, accountId: target.id })
+        appEvents.emit('accounts:changed', { accountId: target.id })
+        log.info('oauth account re-authorised', { provider, accountId: target.id })
+        return { ok: true, account: this.deps.accounts.get(target.id) ?? target, accountId: target.id }
+      }
+
       if (existing) {
         this.deps.credentials.patch(existing.id, { tokens: result.tokens })
         this.deps.accounts.setOAuthProvider(existing.id, provider)
         this.deps.accounts.setSyncState(existing.id, 'idle', null)
-        appEvents.emit('oauth:result', { ok: true })
-        return { ok: true, account: existing }
+        appEvents.emit('accounts:changed', {})
+        log.info('oauth account re-authorised', { provider, accountId: existing.id })
+        return { ok: true, account: existing, accountId: existing.id }
       }
 
       const providerConfig = PROVIDERS[provider === 'google' ? 'gmail' : providerId]
@@ -264,10 +325,22 @@ export class AccountService {
       log.info('oauth account created', { provider })
       this.deps.onAccountCreated?.(account)
       appEvents.emit('oauth:result', { ok: true })
+      appEvents.emit('accounts:changed', {})
       return { ok: true, account }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
+      const cancelled = Boolean((error as { cancelled?: boolean })?.cancelled)
+      if (cancelled) {
+        log.info('oauth sign-in cancelled', { provider })
+        return { ok: false, cancelled: true, error: message }
+      }
       log.warn('oauth sign-in failed', { provider, message })
+      // A failed re-authorisation must leave the account visibly needing a retry
+      // rather than looking healthy.
+      if (targetAccountId && this.deps.accounts.get(targetAccountId)) {
+        this.deps.accounts.setSyncState(targetAccountId, 'auth-required', message)
+        appEvents.emit('accounts:changed', {})
+      }
       return { ok: false, error: message }
     }
   }
@@ -287,6 +360,10 @@ export class AccountService {
       }
     }
     this.deps.credentials.patch(accountId, { tokens: undefined })
+    // Without tokens the account cannot sync, so say so instead of leaving it
+    // looking connected until the next sync fails.
+    this.deps.accounts.setSyncState(accountId, 'auth-required', 'Access was revoked. Choose "Sign in again" to reconnect.')
+    appEvents.emit('accounts:changed', {})
   }
 
   /** Creates the local folder skeleton for an account that has never synced. */

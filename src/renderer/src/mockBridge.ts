@@ -354,8 +354,24 @@ export function installMockBridge(): void {
       update: async () => account,
       remove: async () => undefined,
       setDefault: async () => undefined,
-      startOAuth: async () => ({ ok: false, error: 'Sign-in requires the desktop app.' }),
-      revokeOAuth: async () => undefined
+      startOAuth: async () => ({
+        ok: false,
+        error: 'Sign-in opens your browser, which only the installed Novamail app can do. This window is a preview with sample data.'
+      }),
+      revokeOAuth: async () => undefined,
+      reconnect: async () => ({
+        ok: false,
+        error: 'Reconnecting opens your browser, which only the installed Novamail app can do. This window is a preview with sample data.'
+      }),
+      cancelOAuth: async () => undefined,
+      oauthStatus: async () => [
+        { provider: 'google' as const, configured: false, clientId: null, tenant: null },
+        { provider: 'microsoft' as const, configured: false, clientId: null, tenant: 'common' }
+      ],
+      setOAuthClient: async () => [
+        { provider: 'google' as const, configured: false, clientId: null, tenant: null },
+        { provider: 'microsoft' as const, configured: false, clientId: null, tenant: 'common' }
+      ]
     },
     folders: {
       list: async () => folders,

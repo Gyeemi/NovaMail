@@ -6,6 +6,7 @@
  */
 import { useEffect, useState, type ReactNode } from 'react'
 import type { Account, DiagnosticsReport, Folder } from '@shared/types'
+import type { OAuthProviderStatus } from '@shared/ipc'
 import { ACCOUNT_COLORS } from '@shared/providers'
 import { api, errorMessage } from '../bridge'
 import { useApp } from '../state/AppProvider'
@@ -235,6 +236,95 @@ function AccountSettings(): ReactNode {
   const [removing, setRemoving] = useState<Account | null>(null)
   const [testing, setTesting] = useState<string | null>(null)
   const [testResult, setTestResult] = useState<Record<string, string>>({})
+  /** account id currently waiting for the browser to come back */
+  const [signingIn, setSigningIn] = useState<string | null>(null)
+  const [signInError, setSignInError] = useState<Record<string, string>>({})
+  const [providers, setProviders] = useState<OAuthProviderStatus[]>([])
+  const [editingProvider, setEditingProvider] = useState<'google' | 'microsoft' | null>(null)
+  const [clientIdDraft, setClientIdDraft] = useState('')
+  const [tenantDraft, setTenantDraft] = useState('common')
+  const [savingProvider, setSavingProvider] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    void api.accounts
+      .oauthStatus()
+      .then((status) => {
+        if (!cancelled) setProviders(status)
+      })
+      .catch(() => undefined)
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const providerFor = (account: Account): 'google' | 'microsoft' | null =>
+    account.authType === 'oauth2' ? account.oauthProvider : null
+
+  const providerConfigured = (provider: 'google' | 'microsoft' | null): boolean =>
+    provider ? Boolean(providers.find((entry) => entry.provider === provider)?.configured) : false
+
+  const providerLabel = (provider: 'google' | 'microsoft'): string =>
+    provider === 'google' ? 'Google' : 'Microsoft'
+
+  /**
+   * Re-runs the provider's OAuth flow for one account. The provider page opens
+   * in the system browser; Novamail only receives the authorisation code on its
+   * loopback listener, so this keeps working while the app is in the background.
+   */
+  const reconnect = async (account: Account): Promise<void> => {
+    setSigningIn(account.id)
+    setSignInError((current) => ({ ...current, [account.id]: '' }))
+    try {
+      const result = await api.accounts.reconnect(account.id)
+      if (result.ok) {
+        await actions.refreshAccounts()
+        actions.pushToast({
+          tone: 'success',
+          title: `${account.email} is connected`,
+          description: 'Sign-in finished and new mail will sync normally.'
+        })
+      } else if (result.cancelled) {
+        actions.pushToast({
+          tone: 'info',
+          title: 'Sign-in cancelled',
+          description: 'Nothing was changed. You can sign in again at any time.'
+        })
+      } else {
+        setSignInError((current) => ({
+          ...current,
+          [account.id]: result.error ?? 'The sign-in did not complete.'
+        }))
+      }
+    } catch (error) {
+      setSignInError((current) => ({ ...current, [account.id]: errorMessage(error) }))
+    } finally {
+      setSigningIn(null)
+    }
+  }
+
+  const saveProvider = async (provider: 'google' | 'microsoft'): Promise<void> => {
+    setSavingProvider(true)
+    try {
+      const status = await api.accounts.setOAuthClient({
+        provider,
+        clientId: clientIdDraft.trim(),
+        tenant: provider === 'microsoft' ? tenantDraft.trim() || 'common' : undefined
+      })
+      setProviders(status)
+      setEditingProvider(null)
+      setClientIdDraft('')
+      actions.pushToast({
+        tone: 'success',
+        title: `${providerLabel(provider)} sign-in is configured`,
+        description: 'You can now connect or reconnect accounts from this screen.'
+      })
+    } catch (error) {
+      actions.pushToast({ tone: 'error', title: `Could not save the ${providerLabel(provider)} client ID`, description: errorMessage(error) })
+    } finally {
+      setSavingProvider(false)
+    }
+  }
 
   return (
     <>
@@ -272,6 +362,23 @@ function AccountSettings(): ReactNode {
                     {formatRelative(account.lastSyncAt)}
                   </div>
                   {account.lastError ? <div className="field__error">{account.lastError}</div> : null}
+                  {signingIn === account.id ? (
+                    <div className="small" role="status" aria-live="polite">
+                      <Spinner /> Finish signing in on the page that just opened in your browser. This screen updates on
+                      its own when you are done.
+                    </div>
+                  ) : null}
+                  {signInError[account.id] ? (
+                    <div className="field__error" role="alert">
+                      {signInError[account.id]}
+                    </div>
+                  ) : null}
+                  {providerFor(account) && !providerConfigured(providerFor(account)) ? (
+                    <div className="small muted">
+                      {providerLabel(providerFor(account)!)} sign-in is not set up on this computer yet. Add an OAuth
+                      client ID below, then choose Reconnect.
+                    </div>
+                  ) : null}
                   {testResult[account.id] ? <div className="small">{testResult[account.id]}</div> : null}
                 </div>
               </div>
@@ -318,6 +425,33 @@ function AccountSettings(): ReactNode {
                     }}
                   >
                     Make default
+                  </Button>
+                ) : null}
+                {providerFor(account) ? (
+                  <Button
+                    size="sm"
+                    variant={account.syncState === 'auth-required' ? 'primary' : 'default'}
+                    icon="refresh"
+                    disabled={signingIn !== null}
+                    onClick={() => void reconnect(account)}
+                  >
+                    {signingIn === account.id
+                      ? 'Waiting for your browser…'
+                      : account.syncState === 'auth-required'
+                        ? `Sign in again with ${providerLabel(providerFor(account)!)}`
+                        : 'Reconnect'}
+                  </Button>
+                ) : null}
+                {signingIn === account.id ? (
+                  <Button
+                    size="sm"
+                    icon="close"
+                    onClick={async () => {
+                      await api.accounts.cancelOAuth().catch(() => undefined)
+                      setSigningIn(null)
+                    }}
+                  >
+                    Cancel
                   </Button>
                 ) : null}
                 {account.authType === 'oauth2' ? (
@@ -388,6 +522,92 @@ function AccountSettings(): ReactNode {
           }}
         />
       ) : null}
+
+      <Section
+        title="Sign-in providers (OAuth)"
+        description="Google and Microsoft sign-in uses each provider's own page in your default browser. Novamail never sees your password and never stores one."
+      >
+        {providers.length > 0 ? (
+          providers.map((entry) => (
+            <div className="stack" key={entry.provider} style={{ gap: 8 }}>
+              <Row
+                label={`${providerLabel(entry.provider)} client ID`}
+                hint={
+                  entry.configured
+                    ? `Configured — app ID ending in ${entry.clientId ?? '…'}. Accounts can sign in.`
+                    : 'Not configured yet. Create an OAuth client in the provider console and paste its client ID here.'
+                }
+              >
+                <div className="row" style={{ gap: 8, alignItems: 'center' }}>
+                  <Chip tone={entry.configured ? 'success' : 'warning'}>
+                    {entry.configured ? 'Ready' : 'Not configured'}
+                  </Chip>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    icon="settings"
+                    onClick={() => {
+                      setEditingProvider(entry.provider)
+                      setClientIdDraft('')
+                      setTenantDraft(entry.tenant ?? 'common')
+                    }}
+                  >
+                    {entry.configured ? 'Change' : 'Set up'}
+                  </Button>
+                </div>
+              </Row>
+              {editingProvider === entry.provider ? (
+                <div className="stack" style={{ gap: 8 }}>
+                  <Field label={`${providerLabel(entry.provider)} OAuth client ID`} hint="Public application ID — it is not a secret.">
+                    <input
+                      className="input"
+                      value={clientIdDraft}
+                      spellCheck={false}
+                      autoComplete="off"
+                      placeholder={entry.provider === 'google' ? '1234567890-abc.apps.googleusercontent.com' : '00000000-0000-0000-0000-000000000000'}
+                      onChange={(event) => setClientIdDraft(event.target.value)}
+                    />
+                  </Field>
+                  {entry.provider === 'microsoft' ? (
+                    <Field label="Directory (tenant)" hint="Use “common” for work, school and personal accounts, or your tenant ID.">
+                      <input
+                        className="input"
+                        value={tenantDraft}
+                        spellCheck={false}
+                        autoComplete="off"
+                        placeholder="common"
+                        onChange={(event) => setTenantDraft(event.target.value)}
+                      />
+                    </Field>
+                  ) : null}
+                  <p className="small muted">
+                    Redirect address for {providerLabel(entry.provider)}:{' '}
+                    <code>{entry.provider === 'google' ? 'http://127.0.0.1:<port>/oauth/callback' : 'http://localhost:<port>'}</code>
+                    {entry.provider === 'google'
+                      ? ' — register it as a Desktop app redirect (loopback IP).'
+                      : ' — register it as a Mobile and desktop application platform.'}
+                  </p>
+                  <div className="row" style={{ gap: 8 }}>
+                    <Button
+                      size="sm"
+                      variant="primary"
+                      disabled={savingProvider || clientIdDraft.trim().length < 8}
+                      onClick={() => void saveProvider(entry.provider)}
+                    >
+                      {savingProvider ? 'Saving…' : 'Save client ID'}
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => { setEditingProvider(null); setClientIdDraft('') }}>
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          ))
+        ) : (
+          <p className="muted">Reading sign-in settings…</p>
+        )}
+      </Section>
     </>
   )
 }

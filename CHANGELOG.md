@@ -5,6 +5,59 @@ built from them.
 
 ---
 
+## 1.0.3 — account management and OAuth sign-in
+
+### Fixed
+
+- **"Manage accounts" had nothing to manage.** There was no way to sign an
+  existing account in again: Settings → Accounts offered test, default, revoke and
+  remove, but reconnecting an account had to go through the add-account wizard,
+  which could relabel one mailbox as another. Every OAuth account now has a
+  **Sign in again / Reconnect** button that re-runs that provider's flow for that
+  account only, with live progress and a **Cancel** button while the browser is
+  open.
+- **Google and Microsoft sign-in reported "not configured" with no way out.**
+  The service ignored the client-ID file it wrote itself, and no screen could
+  write it. Both are fixed: a new **Sign-in providers (OAuth)** section in
+  Settings → Accounts saves a Google client ID and a Microsoft client ID + tenant,
+  shows **Ready / Not configured**, and explains the exact loopback redirect to
+  register. The client ID is stored in `%APPDATA%\Novamail\oauth.json` (0600);
+  tokens still go only to the DPAPI-backed credential store.
+- **Revoking access left the account looking connected.** It now clears the
+  tokens, marks the account **Sign in needed** with an explanation, and asks the
+  provider to invalidate the refresh token.
+- **Sign-in failures were silent or misleading.** A failed re-authorisation marks
+  the account `auth-required` with the provider's message; a cancellation is
+  reported as a cancellation (not an error, not a success); a mismatched mailbox
+  is refused with a message naming both addresses; a provider error body is no
+  longer mistaken for a successful token response.
+- **OAuth cancellation had no implementation** even though the IPC result type
+  had a `cancelled` field. `cancelOAuth` now interrupts the loopback wait, closes
+  the listener and resolves the flow cleanly (no unhandled rejection).
+
+### Added
+
+- `accounts.reconnect`, `accounts.cancelOAuth`, `accounts.oauthStatus` and
+  `accounts.setOAuthClient` over IPC (validated, preload allowlist updated, and
+  implemented in the browser demo bridge).
+- `accounts:changed` event so every window repaints account badges immediately.
+- 29 new tests: 10 exercise the real loopback listener and PKCE exchange against a
+  stubbed provider (PKCE challenge, state mismatch, provider denial, cancellation,
+  `invalid_grant`, tenant handling, client-ID masking), 14 cover the account
+  management logic, 5 drive the Settings screen through the UI.
+- Account setup guide: how to register the Google and Microsoft apps, the redirect
+  addresses, and what each account action does.
+
+### Verified
+
+- `npm run typecheck`, `npx vitest run` (105 tests, 11 files), `electron-vite
+  build` and `scripts/verify-build.mjs` all pass.
+- Google and Microsoft sign-in could not be completed against the live providers
+  in the build environment (no browser, no registered client IDs); the flow is
+  covered end-to-end with a stubbed provider instead. See the feature report.
+
+---
+
 ## 1.0.2 — layout repair
 
 ### Fixed

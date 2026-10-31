@@ -290,6 +290,9 @@ export function AppProvider({ children }: { children: ReactNode }): ReactNode {
       void refreshAccountsRef.current()
       void refreshFoldersRef.current()
     })
+    // Account badges (connected / sign-in required) are refreshed for every
+    // change, including a revoke that happened in this or another window.
+    const offAccounts = on('accounts:changed', () => void refreshAccountsRef.current())
     return () => {
       offSync()
       offMail()
@@ -299,6 +302,7 @@ export function AppProvider({ children }: { children: ReactNode }): ReactNode {
       offNavigate()
       offCompose()
       offOauth()
+      offAccounts()
     }
   }, [patch, pushToast])
 
