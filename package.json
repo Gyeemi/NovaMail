@@ -29,7 +29,8 @@
     "dist:win": "npm run build && electron-builder --win nsis --x64",
     "dist:dir": "npm run build:fast && electron-builder --dir",
     "verify": "node scripts/verify-build.mjs",
-    "dist:win:portable": "npm run build && electron-builder --win portable --x64"
+    "dist:win:portable": "npm run build && electron-builder --win portable --x64",
+    "design:tokens": "node scripts/design-tokens.mjs"
   },
   "dependencies": {
     "better-sqlite3": "13.0.3",

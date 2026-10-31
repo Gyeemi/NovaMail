@@ -176,6 +176,7 @@ docs/                   build, account setup, security, privacy, features
 - [Privacy](docs/PRIVACY.md) — every network connection the app makes
 - [Feature status](docs/FEATURES.md) — implemented / partial / planned, honestly
 - [Roadmap](docs/ROADMAP.md)
+- [Working with Figma designs](docs/DESIGN-WORKFLOW.md)
 - [Dependencies and licences](DEPENDENCIES.md)
 
 ---

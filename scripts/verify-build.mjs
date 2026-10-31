@@ -12,6 +12,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { createRequire } from 'node:module'
+import { execFileSync } from 'node:child_process'
 
 const require = createRequire(import.meta.url)
 const root = path.resolve(import.meta.dirname, '..')
@@ -137,6 +138,21 @@ check('no secrets or user data would be packaged', () => {
   const config = fs.readFileSync(path.join(root, 'electron-builder.yml'), 'utf8')
   if (!config.includes("'!**/*.map'")) throw new Error('source maps are not excluded from the package')
   return 'clean'
+})
+
+check('design tokens are in sync', () => {
+  // Optional: only applies once a real Figma export has been committed.
+  const input = path.join(root, 'design/tokens.json')
+  if (!fs.existsSync(input)) return 'no design/tokens.json yet (skipped)'
+  try {
+    execFileSync(process.execPath, [path.join(root, 'scripts/design-tokens.mjs'), '--check'], {
+      encoding: 'utf8',
+      stdio: 'pipe'
+    })
+  } catch (error) {
+    throw new Error(String(error.stdout || error.message).trim())
+  }
+  return 'tokens.generated.css matches design/tokens.json'
 })
 
 /* ---------------------------------------------------------------------- report */
