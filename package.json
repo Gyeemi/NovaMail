@@ -16,7 +16,7 @@
   },
   "scripts": {
     "dev": "electron-vite dev",
-    "dev:renderer": "vite --config vite.renderer.preview.config.ts",
+    "dev:renderer": "vite --config vite.renderer.preview.config.mts",
     "start": "electron-vite preview",
     "build": "npm run typecheck && electron-vite build",
     "build:fast": "electron-vite build",
