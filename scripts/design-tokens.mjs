@@ -22,6 +22,7 @@
  */
 import fs from 'node:fs'
 import path from 'node:path'
+import { pathToFileURL } from 'node:url'
 
 const ROOT = path.resolve(import.meta.dirname, '..')
 const DEFAULT_INPUT = path.join(ROOT, 'design', 'tokens.json')
@@ -233,4 +234,11 @@ function main() {
   )
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) main()
+/*
+ * Run only when executed directly.
+ *
+ * Do not compare against `file://${process.argv[1]}`: on Windows that produces
+ * `file://C:\dir\script.mjs` while import.meta.url is `file:///C:/dir/script.mjs`,
+ * so main() would never run and the script would exit 0 having done nothing.
+ */
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) main()

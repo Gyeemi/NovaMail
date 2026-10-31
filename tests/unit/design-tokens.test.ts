@@ -110,6 +110,15 @@ describe('design token conversion', () => {
     ).toThrow()
   })
 
+  it('actually runs its CLI entry point (a no-op entry guard would hide here)', () => {
+    // Regression: the script compared import.meta.url against
+    // `file://${process.argv[1]}`, which never matches on Windows, so every test
+    // below silently saw an empty stylesheet and CI failed only on the Windows
+    // runner. Asserting on --help output proves main() is reachable.
+    const output = execFileSync(process.execPath, [SCRIPT, '--help'], { encoding: 'utf8' })
+    expect(output).toContain('Usage: node scripts/design-tokens.mjs')
+  })
+
   it('treats a flat file without theme wrappers as light', () => {
     const css = run({ color: { accent: { $value: '#123456' } } })
     expect(css).toContain('--nm-accent: #123456;')
